@@ -1,0 +1,3 @@
+# Preserve exported handbook bytes so the HTML source hash matches Markdown.
+docs/扩展开发手册.md -text
+docs/扩展开发手册.html -text
