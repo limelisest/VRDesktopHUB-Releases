@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VRDesktopHUB MOD 开发手册：从创建项目到 UI、数据、宿主接口和独立后端。">
+  <meta name="source-sha256" content="a7dd554b2fc1cae0d3ed9ce71a716c6424a6213a35e2c58c51dfc1a3054d3fe6">
+  <title>扩展开发手册 · VRDesktopHUB</title>
+  <style>
+    :root { color-scheme: light; --bg:#fff; --side:#f6f6f5; --ink:#252a32; --muted:#65707c; --line:#e3e6e8; --accent:#a94408; --accent-soft:#fff0e4; --code-bg:#191e27; --code-ink:#e7edf5; --inline:#f1f3f5; --focus:#bc5313; }
+    * { box-sizing:border-box; }
+    html { scroll-padding-top:28px; }
+    body { margin:0; color:var(--ink); background:var(--bg); font:15px/1.85 "Segoe UI","Microsoft YaHei UI","Microsoft YaHei",sans-serif; overflow-wrap:break-word; }
+    button,input { font:inherit; }
+    a { color:var(--accent); text-underline-offset:3px; }
+    a:hover { text-decoration:underline; }
+    :focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
+    [hidden] { display:none !important; }
+    .skip { position:fixed; z-index:20; top:12px; left:12px; padding:8px 16px; background:var(--bg); transform:translateY(-160%); }
+    .skip:focus { transform:none; }
+    .sidebar { position:fixed; inset:0 auto 0 0; width:284px; padding:32px 22px 22px; border-right:1px solid var(--line); background:var(--side); display:flex; flex-direction:column; }
+    .brand { display:flex; align-items:center; gap:11px; color:var(--ink); text-decoration:none; font-size:18px; font-weight:700; letter-spacing:-.4px; }
+    .brand-mark { display:grid; place-items:center; width:30px; height:30px; border-radius:9px; background:#f58c39; color:#201710; font-size:17px; font-weight:800; }
+    .edition { margin:10px 0 25px 41px; color:var(--muted); font-size:12px; }
+    .search-label { display:block; color:var(--muted); font-size:12px; font-weight:600; margin-bottom:7px; }
+    .search-box { position:relative; }
+    #search { width:100%; min-width:0; height:40px; padding:0 52px 0 12px; color:var(--ink); background:var(--bg); border:1px solid #b8c0c7; border-radius:7px; font-size:14px; }
+    .shortcut { position:absolute; right:10px; top:8px; color:var(--muted); font:11px/22px "Segoe UI",sans-serif; pointer-events:none; }
+    #search-status { min-height:27px; margin:7px 0 13px; color:var(--muted); font-size:12px; }
+    .contents { min-height:0; overflow:auto; scrollbar-width:thin; padding:0 4px 0 0; }
+    .contents summary { display:none; cursor:pointer; color:var(--muted); font-size:13px; padding:8px 0; }
+    .contents ul { padding:0; margin:0; list-style:none; }
+    .contents a { display:block; color:var(--muted); text-decoration:none; padding:7px 10px; border-radius:6px; font-size:13px; line-height:1.6; border-left:2px solid transparent; }
+    .contents a:hover { color:var(--ink); background:var(--inline); }
+    .contents a.active { color:var(--accent); background:var(--accent-soft); border-left-color:var(--accent); font-weight:600; }
+    .contents ul ul { margin:0 0 5px 12px; border-left:1px solid var(--line); }
+    .contents ul ul a { padding:5px 10px; font-size:12px; }
+    .side-footer { margin-top:auto; padding:20px 10px 0; color:var(--muted); font-size:12px; }
+    main { margin-left:284px; padding:42px clamp(28px,5vw,80px) 72px; }
+    article { max-width:1040px; margin:auto; min-width:0; }
+    .eyebrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--muted); font-size:12px; margin-bottom:17px; }
+    .badge { color:var(--accent); background:var(--accent-soft); border:1px solid #ecc8ab; padding:1px 9px; border-radius:20px; font-weight:650; }
+    h1,h2,h3 { line-height:1.4; color:var(--ink); letter-spacing:-.35px; }
+    h1 { font-size:clamp(27px,3vw,36px); margin:0 0 20px; }
+    h2 { font-size:24px; padding-top:7px; margin:0 0 23px; }
+    h3 { font-size:19px; margin:32px 0 16px; }
+    p { margin:0 0 18px; }
+    #intro > p { color:var(--muted); max-width:900px; }
+    .chapter { border-top:1px solid var(--line); margin-top:38px; padding-top:32px; }
+    .chapter > :last-child { margin-bottom:0; }
+    ul,ol { padding-left:25px; margin:0 0 20px; }
+    li + li { margin-top:5px; }
+    nav li + li { margin:0; }
+    li > p { margin:5px 0; }
+    strong { font-weight:650; }
+    code { font: .88em/1.7 Consolas,"Cascadia Code",monospace; background:var(--inline); padding:2px 5px; border-radius:4px; overflow-wrap:anywhere; }
+    pre { position:relative; background:var(--code-bg); color:var(--code-ink); border:1px solid #303845; border-radius:9px; margin:20px 0 24px; overflow:hidden; }
+    pre > code { display:block; padding:18px 20px; overflow:auto; font-size:12.5px; line-height:1.8; border-radius:0; white-space:pre; overflow-wrap:normal; tab-size:4; background:transparent; color:inherit; }
+    .code-toolbar { display:flex; justify-content:space-between; align-items:center; padding:7px 13px 7px 20px; border-bottom:1px solid #353e4c; font:11px/24px "Segoe UI",sans-serif; color:#b9c5d6; }
+    .copy { border:1px solid #536174; border-radius:5px; padding:0 9px; min-height:26px; color:#e0e8f2; background:transparent; cursor:pointer; font:12px/24px "Segoe UI",sans-serif; }
+    .copy:hover { background:#344052; }
+    .table-scroll { max-width:100%; overflow:auto; margin:22px 0; border:1px solid var(--line); border-radius:8px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; line-height:1.8; }
+    th { background:var(--side); font-weight:650; text-align:left; }
+    th,td { padding:12px 15px; border-bottom:1px solid var(--line); vertical-align:top; }
+    tr:last-child td { border-bottom:0; }
+    td:first-child { min-width:120px; }
+    td code { white-space:normal; }
+    blockquote { margin:22px 0; padding:12px 18px; border-left:3px solid #e7904b; background:var(--accent-soft); }
+    blockquote p:last-child { margin-bottom:0; }
+    mark { background:#ffe1a3; color:#342410; padding:0 1px; border-radius:2px; }
+    .no-results { padding:28px; margin-top:32px; border:1px solid var(--line); border-radius:9px; }
+    .page-footer { border-top:1px solid var(--line); margin:42px auto 0; padding-top:22px; max-width:1040px; color:var(--muted); font-size:12px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (prefers-color-scheme:dark) {
+      :root { color-scheme:dark; --bg:#191c21; --side:#14171b; --ink:#e3e7ed; --muted:#a4aeba; --line:#343b45; --accent:#ffad70; --accent-soft:#382719; --inline:#272e37; --focus:#f5a15e; }
+      #search { border-color:#515d6b; } .badge { border-color:#705033; }
+    }
+    @media (max-width:900px) {
+      .sidebar { position:relative; width:auto; padding:22px 24px 14px; border-right:0; border-bottom:1px solid var(--line); }
+      .brand { font-size:17px; } .edition { margin:4px 0 16px 41px; }
+      .search-label,.side-footer { display:none; }
+      #search-status { margin:5px 0 0; min-height:22px; }
+      .contents { overflow:visible; padding:0; } .contents summary { display:list-item; margin-left:18px; }
+      .contents nav { max-height:55vh; overflow:auto; padding-top:8px; }
+      main { margin:0; padding:30px 24px 48px; }
+      h2 { font-size:22px; } .chapter { margin-top:30px; padding-top:26px; }
+      pre > code { padding:16px; } .code-toolbar { padding-left:16px; }
+    }
+    @media print {
+      :root { color-scheme:light; --bg:#fff; --ink:#000; --muted:#444; --line:#bbb; --inline:#eee; }
+      .sidebar,.skip,.copy,.no-results,.page-footer { display:none !important; }
+      main { margin:0; padding:0; } article { max-width:none; }
+      .chapter[hidden],#intro[hidden] { display:block !important; }
+      .chapter { margin-top:20px; padding-top:18px; }
+      h1 { font-size:26px; } h2 { font-size:20px; break-after:avoid; } h3 { break-after:avoid; }
+      pre { background:#f4f4f4; color:#000; border-color:#bbb; }
+      pre > code { white-space:pre-wrap; overflow-wrap:anywhere; }
+      .code-toolbar { color:#333; border-color:#bbb; }
+      .table-scroll { overflow:visible; } tr { break-inside:avoid; }
+      a { color:#000; } mark { background:transparent; color:inherit; }
+    }
+    @media (prefers-reduced-motion:no-preference) { html { scroll-behavior:smooth; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <aside class="sidebar" aria-label="开发手册导航">
+    <a class="brand" href="#intro"><span class="brand-mark" aria-hidden="true">V</span>VRDesktopHUB</a>
+    <div class="edition">扩展开发文档 · API 1.10</div>
+    <label class="search-label" for="search">搜索手册</label>
+    <div class="search-box"><input id="search" type="search" placeholder="搜索接口、功能或关键词" aria-label="搜索手册" autocomplete="off" spellcheck="false" aria-describedby="search-status"><span class="shortcut" aria-hidden="true">Ctrl K</span></div>
+    <p id="search-status" role="status">10 个章节 · 可离线使用</p>
+    <details class="contents" id="contents" open>
+      <summary>章节目录</summary>
+      <nav aria-label="章节目录"><ul><li data-chapter="section"><a href="#section">1. 从空目录开始</a>
+<ul>
+<li><a href="#section-1">不启动主程序的真实运行验收</a></li>
+</ul>
+</li>
+<li data-chapter="section-2"><a href="#section-2">2. 选择实现形式</a>
+</li>
+<li data-chapter="section-3"><a href="#section-3">3. 包清单与注册关系</a>
+<ul>
+<li><a href="#mod">一个 MOD 的多个功能小部件</a></li>
+<li><a href="#section-4">公开契约与宿主边界</a></li>
+<li><a href="#section-5">主程序更新与兼容</a></li>
+<li><a href="#section-6">清单内容</a></li>
+</ul>
+</li>
+<li data-chapter="section-7"><a href="#section-7">4. 生命周期与调用约定</a>
+</li>
+<li data-chapter="ui"><a href="#ui">5. UI、修订与动作</a>
+<ul>
+<li><a href="#api-1.9">当前窗口与自适应布局（API 1.9）</a></li>
+<li><a href="#section-8">列表动作不需要隐藏字段</a></li>
+<li><a href="#section-9">多行文字与长度</a></li>
+<li><a href="#section-10">任意业务结构的动作参数</a></li>
+</ul>
+</li>
+<li data-chapter="section-11"><a href="#section-11">6. 数据保存与版本迁移</a>
+</li>
+<li data-chapter="section-12"><a href="#section-12">7. 调用宿主</a>
+<ul>
+<li><a href="#api1.10">7.1 宿主联动（API1.10）</a></li>
+</ul>
+</li>
+<li data-chapter="section-13"><a href="#section-13">8. 独立后端与自绘</a>
+<ul>
+<li><a href="#api-1.5">8.1 后端事件订阅（API 1.5）</a></li>
+<li><a href="#section-14">8.2 自绘</a></li>
+</ul>
+</li>
+<li data-chapter="section-15"><a href="#section-15">9. 提供者、限额与排错</a>
+<ul>
+<li><a href="#section-16">9.1 性能与进程隔离的边界</a></li>
+</ul>
+</li>
+<li data-chapter="section-17"><a href="#section-17">10. 反馈开发阻碍</a>
+</li>
+</ul></nav>
+    </details>
+    <div class="side-footer">Windows x64 · .NET 10<br>项目创建 / 接口参考 / 运行验收</div>
+  </aside>
+  <main id="main">
+    <article aria-label="扩展开发手册">
+      <div id="intro"><div class="eyebrow"><span class="badge">公开 API 1.10</span><span>Windows x64 · .NET 10</span></div><h1 id="vrdesktophub">VRDesktopHUB 扩展开发手册</h1>
+<p>面向独立 MOD 作者。扩展 API 1.10，适用于 Alpha144，Windows x64、.NET 10。本手册是开发入口；SDK 的 <code>lib/Contracts.cs</code>、<code>lib/ExtensionBase.cs</code>、<code>lib/BackendEvents.cs</code>、<code>lib/HostContext.cs</code> 是准确的公开 C# 签名。无需引用或阅读 VRDesktopHUB 的 Runtime、Overlay、Extensions 实现。旧 API 1.0–1.9 包仍按自己的清单协商；基类和原辅助调用最低1.4及 <code>sdk.base</code>，后端事件另需最低1.5及显式协议声明。语义排版另需最低1.6及 <code>ui.presentation</code>；实例设置页另需最低1.7及 <code>management.instance-pages</code>；小部件操作栏另需最低1.8及 <code>widgets.toolbar</code>；窗口上下文另需最低1.9及 <code>view.window-context</code>。宿主快照、订阅和自身窗口请求分别需最低1.10及 <code>host.context</code>、<code>host.subscriptions</code>、<code>view.requests</code>。</p>
+<p>公开阅读入口：<a href="https://github.com/limelisest/VRDesktopHUB-Releases/blob/main/docs/%E6%89%A9%E5%B1%95%E5%BC%80%E5%8F%91%E6%89%8B%E5%86%8C.md">发行仓库中的开发手册</a>。<a href="https://github.com/limelisest/VRDesktopHUB-Releases/releases/tag/Alpha144">Alpha144 发行页面</a>另附可下载的离线 HTML 和 Markdown。手册附件仅含文档；下文的开发工具包由维护者单独导出。</p>
+</div>
+      <div class="no-results" id="no-results" hidden>未找到相关章节。试试接口名、动作名或更短的关键词。</div>
+      <section class="chapter" aria-labelledby="section"><h2 id="section">1. 从空目录开始</h2>
+<p>维护者在源码根目录导出开发工具包：</p>
+<pre><code class="language-powershell">powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-extension-sdk.ps1
+</code></pre>
+<p>工具包位于 <code>artifacts/latest/extension-sdk</code>，可以整体复制给作者；不需要私有源码。包含公开SDK DLL/声明、校验打包工具、独立测试工作器、项目生成脚本和本手册。SDK依赖.NET 10，不包含VRDesktopHUB应用主程序或用户数据。</p>
+<p>工具包同时包含本手册的离线 HTML，支持目录、搜索和复制代码。维护者导出 SDK 另需 PowerShell 7，用它从 Markdown 自动生成 HTML；作者使用工具包不需要重新生成文档。</p>
+<p>作者在任意自己的开发目录中执行（将下面 SDK 路径换为实际位置）：</p>
+<pre><code class="language-powershell">$sdk = 'C:\VRDesktopHUB-ExtensionSDK'
+powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$sdk/new-extension.ps1&quot; `
+  -Id org.example.hello -Name '我的文字板' -OutputDirectory .\hello
+powershell -NoProfile -ExecutionPolicy Bypass -File .\hello\build.ps1
+dotnet &quot;$sdk/tools/VRDesktopHUB.ExtensionTools.dll&quot; validate .\hello\package --json
+dotnet &quot;$sdk/tools/VRDesktopHUB.ExtensionTools.dll&quot; pack .\hello\package .\hello-1.0.0.vrdhmod.zip
+</code></pre>
+<p>若 SDK 搬过位置，构建时传 <code>-SdkDirectory &lt;新路径&gt;</code>，或 <code>dotnet build ... -p:VRDesktopHUBSdk=&lt;新路径&gt;</code>。生成器不覆盖已有项目；打包器不覆盖已有包。退出码0成功，非0失败；<code>--json</code> 输出单个 JSON 结果。校验、打包只检查文件和声明，不加载 MOD DLL，也不执行其代码。</p>
+<p>生成的 <code>src/</code> 是源码，<code>package/</code> 才是可安装 MOD：</p>
+<pre><code class="language-text">hello/
+  src/Mod.csproj, Mod.cs
+  build.ps1
+  package/
+    manifest.json
+    bin/Mod.dll
+    languages/zh-CN.json, en-US.json
+    schemas/save.json
+    views/initial.json
+</code></pre>
+<p>把 <strong>package 整个文件夹</strong> 复制为程序的 <code>mods/hello/</code>，或将 ZIP 放入程序 <code>mods/</code>，两种选一种。运行中的程序会发现它；扩展页启用并明确授权本机代码，进入“管理”编辑文字，再从“小部件 → 创建小部件”创建显示。也可在扩展页导入 ZIP/目录；导入副本，原位置后续修改需要重新导入。</p>
+<p>开发时编辑程序 <code>mods</code> 内来源的 JSON/资源可自动重载；代码仍由作者编译后复制 DLL/依赖。不需要改版本号或反复导入。不要编辑用户目录的 <code>mods/installed</code> 缓存。坏构建保留上一版；来源移走会停止它，放回后恢复原内容。首次发现不会自动启用。</p>
+<h3 id="section-1">不启动主程序的真实运行验收</h3>
+<p>工具包还包含独立工作器。<code>run</code> 会<strong>执行你指定的 MOD 代码和后端</strong>，只使用新的隔离注册表与数据目录，不安装到日常应用，也不启动 SteamVR。源码开发与 CI 都可以用它；它验证真实进程和接口，不验证 Windows/VR 像素排版。</p>
+<p>为生成器的文字板保存以下 <code>scenario.json</code>：</p>
+<pre><code class="language-json">{
+  &quot;capabilities&quot;: [],
+  &quot;steps&quot;: [
+    {&quot;op&quot;:&quot;create&quot;,&quot;name&quot;:&quot;card&quot;,&quot;type&quot;:&quot;content&quot;,&quot;title&quot;:&quot;验收文字板&quot;},
+    {&quot;op&quot;:&quot;open&quot;,&quot;name&quot;:&quot;panel&quot;,&quot;kind&quot;:&quot;widget&quot;,&quot;contribution&quot;:&quot;panel&quot;,&quot;instance&quot;:&quot;card&quot;},
+    {&quot;op&quot;:&quot;open&quot;,&quot;name&quot;:&quot;editor&quot;,&quot;kind&quot;:&quot;management&quot;,&quot;contribution&quot;:&quot;settings&quot;},
+    {&quot;op&quot;:&quot;invoke&quot;,&quot;view&quot;:&quot;editor&quot;,&quot;action&quot;:&quot;save&quot;,&quot;parameters&quot;:{&quot;message&quot;:&quot;独立开发成功&quot;}},
+    {&quot;op&quot;:&quot;state&quot;,&quot;path&quot;:&quot;/message&quot;,&quot;equals&quot;:&quot;独立开发成功&quot;},
+    {&quot;op&quot;:&quot;invoke&quot;,&quot;view&quot;:&quot;editor&quot;,&quot;action&quot;:&quot;save&quot;,&quot;parameters&quot;:{&quot;message&quot;:&quot; &quot;},&quot;success&quot;:false},
+    {&quot;op&quot;:&quot;state&quot;,&quot;path&quot;:&quot;/message&quot;,&quot;equals&quot;:&quot;独立开发成功&quot;},
+    {&quot;op&quot;:&quot;close&quot;,&quot;view&quot;:&quot;editor&quot;},
+    {&quot;op&quot;:&quot;close&quot;,&quot;view&quot;:&quot;panel&quot;},
+    {&quot;op&quot;:&quot;dormant&quot;}
+  ]
+}
+</code></pre>
+<pre><code class="language-powershell">dotnet &quot;$sdk/tools/VRDesktopHUB.ExtensionTools.dll&quot; run .\hello\package .\scenario.json .\new-run --json
+</code></pre>
+<p>每次使用新输出目录。steps.json记录逐步结果，snapshot.json保存退出前的上下文、视图与动作，store/保存隔离数据供排错。name为create/open的引用名；instance和view引用这些名字，不把临时GUID写死。invoke默认期望成功，<code>success:false</code>期望拒绝，可用errorContains核对原因；state用JSON Pointer定位自己的包级或实例数据，指定instance时读该实例。</p>
+<p>API1.7 实例设置使用 <code>{&quot;op&quot;:&quot;open&quot;,&quot;name&quot;:&quot;camera-editor&quot;,&quot;kind&quot;:&quot;management&quot;,&quot;contribution&quot;:&quot;camera-settings&quot;,&quot;instance&quot;:&quot;camera&quot;}</code>，其中 camera 引用前面的 create；不带 instance 仍打开旧全局页。场景顶层可放 <code>&quot;initialGlobal&quot;:{...}</code>，仅在本次隔离 store 导入后、启用前初始化包级数据；例如预设本地测试端点，避免先运行真实自动发现再修改配置。它不是生产配置命令，不访问用户安装数据。</p>
+<p>其他步骤：<code>{&quot;op&quot;:&quot;enabled&quot;,&quot;enabled&quot;:false}</code>、<code>{&quot;op&quot;:&quot;feature&quot;,&quot;feature&quot;:&quot;main&quot;,&quot;enabled&quot;:false}</code>、<code>{&quot;op&quot;:&quot;capability&quot;,&quot;capability&quot;:&quot;workspace.read&quot;,&quot;granted&quot;:true}</code>、<code>{&quot;op&quot;:&quot;delete&quot;,&quot;instance&quot;:&quot;card&quot;}</code>、<code>{&quot;op&quot;:&quot;crash&quot;}</code>（仅结束本测试工作器）。重新启用后重新open管理页，旧页不能复用。open可指定language。纯操作栏动作的invoke不填view，实例动作加instance。run没有真实VR宿主，workspace/capture/runtime的应用能力可能返回host_unavailable/vr_unavailable；这不等于真实应用未实现该能力。</p>
+<p>需要把运行时生成的实例 ID 放进动作参数时，使用精确对象引用：<code>&quot;parameters&quot;:{&quot;value&quot;:{&quot;$instance&quot;:&quot;card&quot;}}</code>。工具将这个对象替换为card的真实GUID字符串，普通文本和其他对象不改。引用只在本次场景内解析，不是MOD协议的一部分。</p>
+<p>可用以下步骤检查中间结果，避免只看末尾快照：</p>
+<pre><code class="language-json">{&quot;op&quot;:&quot;view&quot;,&quot;view&quot;:&quot;panel&quot;,&quot;path&quot;:&quot;&quot;,&quot;contains&quot;:&quot;独立开发成功&quot;}
+{&quot;op&quot;:&quot;action&quot;,&quot;action&quot;:&quot;save&quot;,&quot;enabled&quot;:true,&quot;busy&quot;:false}
+{&quot;op&quot;:&quot;checkpoint&quot;}
+</code></pre>
+<p>view定位到已打开视图的ViewDocument，path为JSON Pointer；equals精确比较JSON，contains递归检查字符串内容（支持中文）。action核对指定动作的enabled/checked/busy；实例动作需加instance。checkpoint把当时页面、上下文、动作和运行状态保存到snapshot-序号.json，不是像素截图。</p>
+<p>state/view/action默认立即断言。请求返回queued后，完成事件可能在后续回调才到达；用<code>{&quot;op&quot;:&quot;state&quot;,&quot;path&quot;:&quot;/status&quot;,&quot;equals&quot;:&quot;failed&quot;,&quot;wait&quot;:true}</code>等待条件，最多7秒。view和action同样支持wait:true。等待只在显式测试步骤中运行，正常宿主不增加轮询；不要用立即读到queued推断没有完成事件，也不要在MOD动作回调内阻塞等待它。</p>
+<p><code>{&quot;op&quot;:&quot;external-state&quot;,&quot;data&quot;:{&quot;message&quot;:&quot;其他编辑者保存的内容&quot;}}</code>在<strong>本次新建的隔离store</strong>使用真实原子保存更新全局数据；加instance可指定本次创建的实例。工作器不收到额外通知，下一次使用旧Revision保存必须冲突。用它验证拒绝覆盖、显式重读及合并；它不是生产宿主命令，不能写日常应用配置，也不模拟业务保存成功。测试数据必须符合你自己的数据结构。崩溃不会自动重新执行有副作用的动作；通过enabled:false、enabled:true显式恢复，再重新open视图。</p>
+</section>
+<section class="chapter" aria-labelledby="section-2"><h2 id="section-2">2. 选择实现形式</h2>
+<table>
+<thead>
+<tr>
+<th>需求</th>
+<th>实现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>静态文字、按钮打开内容、键盘/主题等提供者</td>
+<td><code>runtime.kind: none</code>，只交付 JSON 与资源</td>
+</tr>
+<tr>
+<td>原生表单、业务逻辑、保存、宿主调用</td>
+<td>托管 <code>ExtensionBase</code> 或 <code>IExtension</code>，结构化 UI</td>
+</tr>
+<tr>
+<td>与宿主完全不同的视觉</td>
+<td>托管前端生成 PNG，发布 <code>surface</code>；目前只回传确认点击</td>
+</tr>
+<tr>
+<td>独立程序或其他语言后端</td>
+<td>托管前端 + 包内 EXE，使用标准输入输出 JSON 分帧；后端不限语言</td>
+</tr>
+</tbody>
+</table>
+<p>本机代码可以调用普通用户有权访问的系统库、文件、网络及自己的依赖；代码授权不是沙箱。宿主的 VR、输入、工作区、捕获对象不作为可变引用交给 MOD，需要通过能力命令操作。宿主以普通用户令牌运行前后端，管理员主程序也不会把管理员权限传给 MOD。</p>
+<p>结构化控件由宿主提供 Windows/VR 渲染、滚动、文字输入和草稿；MOD 不需要业务分页。空间窗口、移动、缩放、吸附和收起统一由宿主管理。业务管理页的内容和行为由 MOD 定义。</p>
+</section>
+<section class="chapter" aria-labelledby="section-3"><h2 id="section-3">3. 包清单与注册关系</h2>
+<h3 id="mod">一个 MOD 的多个功能小部件</h3>
+<p>一个 MOD 可以在 <code>contributes.widgets</code> 声明多种小部件；每种使用独立的 <code>id</code>、标题、初始视图和 <code>instanceTypeId</code>。独立功能分别映射到 <code>instanceTypes</code> 中的业务类型，使用 <code>featureId</code> 控制该功能。<code>supportsMultipleInstances</code> 在业务类型上控制是否可以创建多个内容实例。</p>
+<p>包级设置和外部连接由 MOD 共享，具体部件配置存入对应实例数据。例如一个工具箱同时提供聊天、参数控制和状态小部件，仍只启动一份包级工作器和至多一份清单声明的独立后端。不能为每次打开视图重复建立连接；关闭视图也不能删除业务实例或停止其他部件。一个实例需要小部件和表盘两种展示时，可让这两种入口引用相同业务类型。</p>
+<p>当前每包最多声明16种小部件、32种业务类型；宿主全部 MOD 合计最多64个业务实例。“种类”“内容实例”和“展示视图”不是同一个计数。所有可用小部件均通过宿主统一创建列表进入，停用的 MOD 或功能不出现。</p>
+<h3 id="section-4">公开契约与宿主边界</h3>
+<p><code>ExtensionContracts</code> 是独立的插件契约库，不依赖 Runtime、Project、Core、WPF 或 OpenVR；第三方只引用公开 DLL。宿主通过能力桥接执行工作区、捕获等真实操作，MOD 不得引用主程序私有类型。这是独立契约加主程序宿主适配，能力协议仍具有 VRDesktopHUB 的业务语义；当前请求和结果采用字符串与 JSON 约定，运行工作器也仍限定 Windows，不能称为与宿主无关的完整抽象层。HTML 手册不代表支持 HTML 运行时 UI。</p>
+<h3 id="section-5">主程序更新与兼容</h3>
+<p>主程序 Alpha/build 版本、扩展 API、MOD 包 version 和业务 dataVersion 分开管理。当前宿主保留 API1.0–1.4，按包声明的 <code>[min,maxExclusive)</code> 与必需特性选择可用版本；窄范围保留对应旧版本，宽范围仍选择最高兼容版本。API1.x 的公开契约程序集身份固定为1.0.0.0，新增能力不要求旧包重新编译。旧接口不能删改或增加必需实现成员；不兼容的主版本明确拒绝，不能静默替换。</p>
+<p>宽范围并不自动开启全部新行为。视图/动作发布等待宿主校验确认的行为，要求包明确声明最低API1.4；较早最低版本的包保留原通知语义，即使本次协商出的最高版本为1.4也不变。使用新SDK时应声明真实最低版本及特性。</p>
+<p>可以查看 SDK 内 <code>compatibility.json</code>，或查询同一份兼容描述：</p>
+<pre><code class="language-powershell">dotnet &quot;$sdk/tools/VRDesktopHUB.ExtensionTools.dll&quot; compatibility --json
+</code></pre>
+<p>主程序更新保留程序 <code>mods/</code>、已安装包、业务数据、实例与工作区配置。宿主升级不会自动提高 MOD 的 dataVersion；插件自身数据迁移只在候选代际执行，失败保留旧版。不兼容包仍可停用或卸载，默认保留数据，不影响其他 MOD。作者应保留交付的原始二进制，用新版宿主验收，而不是每次重编译掩盖兼容问题。</p>
+<h3 id="section-6">清单内容</h3>
+<p>以下为 API 1.4 托管包的最小结构。完整可运行版本由生成器产生，不能仅拷贝清单而缺少 DLL、语言、视图和 schema。</p>
+<pre><code class="language-json">{
+  &quot;manifestVersion&quot;: 2,
+  &quot;id&quot;: &quot;org.example.hello&quot;, &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;nameKey&quot;: &quot;name&quot;, &quot;author&quot;: &quot;Your name&quot;,
+  &quot;defaultLanguage&quot;: &quot;zh-CN&quot;,
+  &quot;languages&quot;: { &quot;zh-CN&quot;: &quot;languages/zh-CN.json&quot;, &quot;en-US&quot;: &quot;languages/en-US.json&quot; },
+  &quot;api&quot;: { &quot;min&quot;: &quot;1.4&quot;, &quot;maxExclusive&quot;: &quot;2.0&quot; }, &quot;dataVersion&quot;: 1,
+  &quot;runtime&quot;: {
+    &quot;kind&quot;: &quot;managed&quot;, &quot;entryAssembly&quot;: &quot;bin/Mod.dll&quot;, &quot;entryType&quot;: &quot;MyMod.Extension&quot;,
+    &quot;targetFramework&quot;: &quot;net10.0&quot;, &quot;runtimeIdentifier&quot;: &quot;win-x64&quot;
+  },
+  &quot;capabilities&quot;: { &quot;required&quot;: [], &quot;optional&quot;: [] },
+  &quot;requiredFeatures&quot;: [&quot;sdk.base&quot;, &quot;ui.basic&quot;, &quot;widgets&quot;, &quot;instance-types&quot;, &quot;content-views&quot;, &quot;features&quot;],
+  &quot;contributes&quot;: {
+    &quot;features&quot;: [{ &quot;id&quot;: &quot;main&quot;, &quot;titleKey&quot;: &quot;name&quot; }],
+    &quot;instanceTypes&quot;: [{ &quot;id&quot;: &quot;content&quot;, &quot;titleKey&quot;: &quot;name&quot;, &quot;supportsMultipleInstances&quot;: true, &quot;featureId&quot;: &quot;main&quot; }],
+    &quot;widgets&quot;: [{ &quot;id&quot;: &quot;panel&quot;, &quot;titleKey&quot;: &quot;name&quot;, &quot;initialView&quot;: &quot;views/initial.json&quot;, &quot;instanceTypeId&quot;: &quot;content&quot;, &quot;featureId&quot;: &quot;main&quot; }],
+    &quot;wristPages&quot;: [], &quot;actions&quot;: []
+  }
+}
+</code></pre>
+<p>ID 使用反向域名风格、仅小写字母数字点和连字符，不使用保留的 <code>vrdesktophub.</code>。清单版本2是包格式，<code>api</code> 是接口协商范围，<code>version</code> 是 MOD 版本，<code>dataVersion</code> 是业务数据版本，四者不能混用。JSON 字段名使用上例 camelCase，未知字段报错。所有包内路径使用正斜杠相对路径，禁止绝对路径、<code>..</code>、链接和大小写重复路径。ZIP 根层直接包含 manifest.json。</p>
+<p>每个 <strong>instanceType</strong> 定义一种有 ID、名称及独立数据的业务内容；<strong>widget/wrist/action</strong> 定义显示或操作它的入口。多个入口可以共享同一 instanceType/instanceId，不能为同一份业务数据各造一个对象。没有业务实例的管理页或纯动作不需要假小部件。</p>
+<p>同一业务功能的类型、视图、动作与提供者共用一个 <code>featureId</code>，例如计数器的加一、归零、表盘与小部件属于同一个功能。宿主负责关闭这些入口；MOD 有自己的后台工作时实现可选 <code>IExtensionFeatures.FeaturesChangedAsync</code> 停止相应工作。</p>
+<table>
+<thead>
+<tr>
+<th>注册项</th>
+<th>关键字段与附加特性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>业务类型</td>
+<td><code>instanceTypes: [{id,titleKey,supportsMultipleInstances,featureId?}]</code>；<code>instance-types</code>，API≥1.1</td>
+</tr>
+<tr>
+<td>小部件</td>
+<td><code>widgets: [{id,titleKey,initialView,instanceTypeId,featureId?,size?}]</code>；<code>widgets</code>、<code>content-views</code></td>
+</tr>
+<tr>
+<td>表盘</td>
+<td><code>wristPages: [{id,titleKey,instanceTypeId,initialView,featureId?}]</code>；<code>wrist-pages</code></td>
+</tr>
+<tr>
+<td>动作</td>
+<td><code>actions: [{id,labelKey,parameterSchema,target,instanceTypeId?,kind?,toolbar?,handler?,icon?,featureId?}]</code>；<code>actions</code></td>
+</tr>
+<tr>
+<td>管理页</td>
+<td><code>managementPages: [{id,titleKey,initialView}]</code>；<code>management-pages</code>，API≥1.1，代码实现 <code>IExtensionManagement</code></td>
+</tr>
+<tr>
+<td>实例设置页</td>
+<td>管理页增加 <code>instanceTypeId</code>；同时声明 <code>management-pages</code>、<code>management.instance-pages</code>，API≥1.7；设置直接嵌入小部件编辑区</td>
+</tr>
+<tr>
+<td>功能</td>
+<td><code>features: [{id,titleKey}]</code>；<code>features</code>，API≥1.2</td>
+</tr>
+<tr>
+<td>提供者</td>
+<td><code>providers: [{id,slot,titleKey,value,version:1,featureId?}]</code>；<code>host.providers</code>，API≥1.2</td>
+</tr>
+</tbody>
+</table>
+<p>动作 <code>target</code> 为 <code>instance</code> 或 <code>extension</code>，默认 instance；前者必须给 instanceTypeId，调用时带该 MOD 对应类型的实例 ID，后者目标 ID为null。<code>kind</code> 为 <code>command</code>/<code>toggle</code>。<code>toolbar</code> 为 <code>none</code>/<code>toggles</code>/<code>functions</code>，显示到操作栏时需包内 PNG icon及 <code>actions</code> 特性；用户明确绑定后显示。<code>handler</code> 默认 <code>extension</code>；<code>host.openWidget</code> 需 widgetTypeId，交给宿主打开该展示。用非空 schema 描述动作参数，不靠 C# 转型后才检查输入。</p>
+<p>当前开发版每包最多声明128个动作，运行时完整动作状态快照最多2048项（实例动作按各实例分别计数）。设置保存应声明独立动作，不借用聊天发送、实时控制等动作并塞入不相关参数。超过声明上限时校验器定位到 <code>manifest.json /contributes/actions</code>；消息大小、速率、租约和运行状态限制仍独立适用。</p>
+<p><code>size</code> 使用 Width/Height 对应的 camelCase 字段 width、height、minWidth、minHeight、maxWidth、maxHeight；默认560×280，最小360×240，最大960×714。控制容器排版，不能改空间抓握语义。</p>
+</section>
+<section class="chapter" aria-labelledby="section-7"><h2 id="section-7">4. 生命周期与调用约定</h2>
+<p><code>ExtensionBase</code> 只简化 <code>IExtension</code> 空回调，不隐藏存储、线程或自动重试。覆盖 <code>OnInitializeAsync</code>，Context已可用；不要重写 InitializeAsync。可选接口仍显式声明。</p>
+<table>
+<thead>
+<tr>
+<th>回调</th>
+<th>作者的工作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OnInitializeAsync</td>
+<td>从 <code>Context.Bootstrap.Global</code> 恢复包级数据，记住 Revision；读取 GrantedCapabilities、协商 ApiVersion、Features</td>
+</tr>
+<tr>
+<td>CreateInstanceAsync</td>
+<td>返回新实例初始 JSON；此时宿主尚未提交实例，不能先保存它</td>
+</tr>
+<tr>
+<td>RestoreInstanceAsync</td>
+<td>从 InstanceContext.State 恢复实例数据和修订，Name是用户命名；不是每次打开视图都新建数据</td>
+</tr>
+<tr>
+<td>UpdateViewContextAsync</td>
+<td>保存 ViewContext并按尺寸、语言、字号、Visible发布内容；基类的 AttachViewAsync会转到这里</td>
+</tr>
+<tr>
+<td>InvokeAsync</td>
+<td>执行动作，参数已按 schema 验证；业务拒绝返回 <code>new ActionResult(false, reason)</code></td>
+</tr>
+<tr>
+<td>DetachViewAsync</td>
+<td>移除这个 ViewId 的展示缓存，不删除业务内容</td>
+</tr>
+<tr>
+<td>DeleteInstanceAsync</td>
+<td>移除已删除实例的本地缓存；宿主已撤销其存储权限</td>
+</tr>
+<tr>
+<td>MigrateAsync</td>
+<td>数据版本变化时返回转换后的 JSON，不写活动数据；失败拒绝更新并保留上一代</td>
+</tr>
+<tr>
+<td>ShutdownAsync</td>
+<td>结束自身资源和任务；正常休眠也会退出工作器，不能把进程内存当存储</td>
+</tr>
+</tbody>
+</table>
+<p>宿主串行调用业务回调。作者创建自己的线程/异步任务时，需要自己保护业务状态；不要阻塞回调等用户操作，不在回调里 <code>.Wait()</code>/<code>.Result</code> 等待宿主请求。<code>await</code> 调用宿主与后端，不把后台任务当成永久进程。回调/IPC有超时；需要长任务时立即发布 Busy状态，在自己的任务完成后发布结果，并响应取消/关闭。</p>
+<p>最后视图离开且无操作入口使用时，约2秒后释放普通工作器及其后端；关闭的管理页15秒未续租会失效。声明并获准 <code>lifecycle.background</code> 的 MOD 在启用后即使没有视图也会启动、保留工作器；独立后端仍由 MOD 在初始化或业务需要时启动，宿主不会代替作者连接服务。以 <code>Context.Bootstrap.GrantedCapabilities</code> 判断实际授权，不以 manifest 声明代替授权。需要保留旧版按需生命周期时，可将它声明为可选能力：获准后在初始化中启动后台业务，未获准时维持按需工作，并在管理页说明差异。停用 MOD 或撤销该能力会结束对应后台生命周期。</p>
+</section>
+<section class="chapter" aria-labelledby="ui"><h2 id="ui">5. UI、修订与动作</h2>
+<p>发布页面：</p>
+<pre><code class="language-csharp">await Context.PublishViewAsync(new ViewSnapshot(
+    view.ViewId, view.ActivationId, view.ContextRevision, ++revision,
+    new ViewDocument(1, new UiNode(&quot;text&quot;, &quot;message&quot;, Content: new UiText(Text: message)))), ct);
+await Context.PublishActionsAsync(new ActionStateSnapshot(++actionRevision,
+    [new ActionState(&quot;increase&quot;, instanceId, Enabled: true)]), ct);
+</code></pre>
+<p>ViewId、ActivationId、ContextRevision来自当前上下文；不能缓存旧上下文后继续发布。Revision对每个视图单调递增；动作状态的Revision独立单调递增。发布所有可用动作状态的完整快照；实例动作必须用对应instanceId。动作被省略、Enabled=false或Busy=true时不能调用。仅在数据或上下文变化时发布，静态内容无需循环刷新或写日志。</p>
+<h3 id="api-1.9">当前窗口与自适应布局（API 1.9）</h3>
+<p>需要窗口信息时，清单声明 <code>api: { &quot;min&quot;: &quot;1.9&quot;, &quot;maxExclusive&quot;: &quot;2.0&quot; }</code> 并在 <code>requiredFeatures</code> 加入 <code>view.window-context</code>。<code>ViewContext</code> 原构造保持不变，新增 <code>ViewWindowContext? Window { get; init; }</code>。未声明特性的包不接收该 JSON 字段，即使旧包宽范围协商到1.9也一样。</p>
+<table>
+<thead>
+<tr>
+<th>Window 字段</th>
+<th>作者用法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Presentation</code></td>
+<td><code>window</code>、<code>hand-panel</code> 或 <code>wrist</code>。表示普通窗口、手部小窗、表盘，与贡献 <code>Kind=widget/wrist</code> 分开</td>
+</tr>
+<tr>
+<td><code>Hand</code></td>
+<td><code>left</code>、<code>right</code> 或 null，表示当前呈现的左右手归属；不可从 ViewId 推断</td>
+</tr>
+<tr>
+<td><code>ContentWidth/ContentHeight</code></td>
+<td>实际可排版正文的逻辑像素尺寸，与原 Width/Height 同尺度，原点为正文局部(0,0)。宿主已扣除自己的边距、滚动条和反馈区域，外置操作栏不占正文</td>
+</tr>
+<tr>
+<td><code>CanInteract</code></td>
+<td>当前正文输入资格，包含隐藏/穿透、该视图空间或尺寸编辑及输入释放门禁。可见不代表可操作；业务按钮还需遵守各自 Enabled/Busy</td>
+</tr>
+<tr>
+<td><code>WidthMeters/HeightMeters</code></td>
+<td>原 Width/Height 贡献画布对应的只读、已提交物理宽高，米，保留到0.1毫米；表盘只计算贡献正文，不包含整个手表、外置操作栏或宿主缩放预览值</td>
+</tr>
+</tbody>
+</table>
+<p><code>Width/Height</code> 是原有画布的逻辑像素尺寸，不是PNG实际栅格像素或Windows桌面像素；小部件可用正文通常小于该尺寸，不能自行再扣一份固定边框。按 <code>Window.ContentWidth</code> 决定列数和换行，按 <code>ContentHeight</code> 安排内容；<code>FontScale</code> 仍是字号唯一来源，不能按米数再缩放文字。物理尺寸供确有需要的内容参考，MOD 不能因此移动、绑定或调整宿主。<code>CanInteract</code> 表示输入资格，不跟踪淡入淡出每帧的纹理状态。</p>
+<p>整体缩放与画布尺寸分别处理。纯整体缩放保持 <code>Width/Height</code>、<code>ContentWidth/ContentHeight</code> 和 <code>FontScale</code>，只在宿主提交后更新 <code>WidthMeters/HeightMeters</code>；抓取中的物理预览由宿主完成，取消不发布预览值。MOD复用逻辑布局，不能因为米数变化切列或再次放大字号。修改正文比例与容量时，宿主传入最新合法画布及实际正文区域，MOD才重排；宿主合并已过时中间档位。网格只约束外画布，正文尺寸不必是网格倍数，MOD不得二次取整或写死16像素步长。</p>
+<p>普通窗口和手部呈现分别保存画布与空间缩放；换手保留大小。“还原大小”由宿主固定操作栏提供，恢复当前呈现的默认画布和100%空间缩放，和解除手部绑定的“还原小窗”、MOD业务参数恢复默认分别处理，MOD不重复声明按钮。独立缩放、网格和还原大小属于宿主后续尺寸设计，具体操作和档位以所运行的宿主为准；API1.9字段本身不表示全部操作已实现。</p>
+<p>该视图进行空间或尺寸编辑时 <code>CanInteract=false</code>，即使仍然可见；恢复操作还要经过宿主的释放/回中门禁。资格变化可以更新 <code>ContextRevision</code>，但不应因此重建逻辑布局、清空选择项、折叠状态或未提交草稿。布局缓存按正文逻辑尺寸、语言、字号、主题、子页及必要的呈现语义判断；物理米数和交互资格通常只更新元数据。重新发布时仍须使用最新的 <code>ContextRevision</code>，不能继续发送旧修订文档或输入。</p>
+<p>保存并使用完整 <code>ViewContext</code>，把它传入自己的 <code>BuildWidget(view)</code>。同一 InstanceId 的多个贡献与表盘共享业务数据，但各有 ViewId 和布局缓存。上手、换手、还原、尺寸、字号、语言、显隐或输入资格变化通过 <code>UpdateViewContextAsync</code> 更新原视图和 ContextRevision；手部平移和旋转不触发该回调。后台业务刷新时使用每个视图最新的上下文发布，不缓存旧修订。Visible=false停止无用绘制，不能因此删除实例或解绑业务。</p>
+<p>SDK <code>run</code> 的 widget/wrist <code>open</code> 和新增 <code>context</code> 步骤支持 <code>width</code>、<code>height</code>、<code>visible</code>、<code>fontScale</code>、<code>language</code>、<code>window</code>。<code>window</code> 使用上述字段的 camelCase，未提供的上下文字段保留原值；<code>context</code> 通过 <code>view</code> 引用已打开视图。隐藏且已休眠时只登记请求，恢复可见后附加，不为不可见视图唤醒工作器，也不强求发布隐藏文档。<code>invoke</code> 指定 widget/wrist <code>view</code> 时按该视图的修订和交互资格执行；不指定仍是操作栏动作。以下只验证真实隔离工作器的数据与回调，不产生 Windows/VR 画面或头显输入证据。</p>
+<pre><code class="language-json">{&quot;op&quot;:&quot;context&quot;,&quot;view&quot;:&quot;camera&quot;,&quot;width&quot;:360,&quot;height&quot;:280,&quot;fontScale&quot;:1.2,
+ &quot;window&quot;:{&quot;presentation&quot;:&quot;hand-panel&quot;,&quot;hand&quot;:&quot;left&quot;,&quot;contentWidth&quot;:312,&quot;contentHeight&quot;:248,
+           &quot;canInteract&quot;:true,&quot;widthMeters&quot;:0.34,&quot;heightMeters&quot;:0.2644}}
+</code></pre>
+<p>直接使用新属性的 MOD 必须声明最低1.9和必需特性。<code>Window=null</code> 是当前契约的缺省路径，不能据此宣称新二进制兼容尚无该 getter 的旧宿主；需要旧宿主版本时，保留一个只引用旧SDK并使用原 Width/Height 的构建。旧1.7/1.8包在新宿主上继续运行，无需重编译。宿主位姿、停靠、透明度、操作栏、输入和生命周期均不由 MOD 复制。</p>
+<p>协商API1.4后，await PublishViewAsync / PublishActionsAsync会等待宿主完成校验；无效文档在await处返回错误，不能将排队当作发布成功。工作器串行安排发布，按2MiB/s调节大文档流量，仍保留单条/队列/接收速率限制。不要丢弃ValueTask后无限发布，也不要为规避限流写固定睡眠；只发布改变的视图，列表批量修改完成后合并更新。API1.0–1.3保持原通知语义；旧二进制无需重编译。无效通知导致停止时，管理页和运行器快照保留最初的校验原因。</p>
+<p><code>UiText(Text: ...)</code> 直接文字，<code>UiText(Key: ...)</code> 取包内语言键，二者只能选一个。语言文件是键值字典；插件没提供当前语言时回退清单defaultLanguage。宿主不会替作者翻译业务数据或重命名内容。</p>
+<p>节点稳定ID在整份页面内唯一，1–64个字符。跨业务实例的输入字段也应使用不同ID，避免把A的草稿带入B。支持 stack、row、text、button、toggle、number、progress、form、list、select、textInput、surface；没有任意 HTML/XAML 执行。常用 C# 属性除 Type/Id 均可在构造参数或对象初始化器设置：Content、Label、ActionId、Enabled、Value、Number、Minimum、Maximum、Step、Spacing、Children、InstanceId、TextValue、Choices、Submit、Field、Reset、Frame、Arguments、Multiline、MaxLength、Variant。准确大小写及构造顺序见 SDK 声明。</p>
+<p>API 1.6 语义排版要求清单同时声明 <code>api.min: &quot;1.6&quot;</code> 和 <code>requiredFeatures: [&quot;ui.presentation&quot;, ...]</code>。<code>Variant</code> 不传时保持旧版行为；不能借用不匹配的节点或自行传入颜色、字号、坐标。</p>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>Variant</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>text</td>
+<td>heading / caption / value</td>
+<td>内容标题、辅助文字、突出观测值；仍随全局字号换行</td>
+</tr>
+<tr>
+<td>stack</td>
+<td>card</td>
+<td>内容卡片及统一内边距，不是空间窗口外框</td>
+</tr>
+<tr>
+<td>stack</td>
+<td>disclosure</td>
+<td><code>Label</code> 必填；<code>Value</code> 指定首次是否展开，后续由宿主维护本视图的展开状态</td>
+</tr>
+<tr>
+<td>row</td>
+<td>actions</td>
+<td>只允许普通/primary的单行button子项；根据实际文字宽度自动换列，不使用普通row的560像素断点；phrase请直接放stack/list</td>
+</tr>
+<tr>
+<td>button</td>
+<td>primary</td>
+<td>主题强调的主要操作；不改变业务开关或选中状态</td>
+</tr>
+<tr>
+<td>button</td>
+<td>phrase</td>
+<td>正文可换行的整项操作，适合常用语；测量、背景及命中使用同一完整区域</td>
+</tr>
+</tbody>
+</table>
+<p>折叠区只影响展示：不调用 MOD 动作、不保存配置，不清空表单草稿；隐藏字段仍随所在 form 提交。使用稳定节点ID，使后台快照更新不重置用户刚切换的展开状态。不要把授权失败、连接错误或待处理冲突只放进默认折叠区。Windows 与 VR 使用各自已有控件，不要求两端逐像素相同。</p>
+<table>
+<thead>
+<tr>
+<th>节点</th>
+<th>数据与交互</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stack / row</td>
+<td>Children 纵向/横向排布，Spacing=<code>normal</code>/<code>compact</code></td>
+</tr>
+<tr>
+<td>text</td>
+<td>Content；长文自动换行</td>
+</tr>
+<tr>
+<td>button</td>
+<td>Label，ActionId；纯按钮默认参数 <code>{}</code></td>
+</tr>
+<tr>
+<td>toggle</td>
+<td>Label，Value；有ActionId时参数 <code>{desiredValue:boolean}</code></td>
+</tr>
+<tr>
+<td>number</td>
+<td>Label，Number、Minimum、Maximum、Step；有ActionId时Enter提交 <code>{value:number}</code></td>
+</tr>
+<tr>
+<td>progress</td>
+<td>Number、Minimum、Maximum，只显示</td>
+</tr>
+<tr>
+<td>textInput</td>
+<td>Label、TextValue；单行有ActionId时Enter提交 <code>{value:string}</code>；失焦不保存。API1.4的ui.text允许Multiline/MaxLength</td>
+</tr>
+<tr>
+<td>select</td>
+<td>Label、TextValue=选项ID，Choices=[UiChoice(id,label)]；有ActionId时提交 <code>{value:string}</code></td>
+</tr>
+<tr>
+<td>form</td>
+<td>Children；Submit按钮提交最近一层form所有输入字段，字段键取Field或节点ID</td>
+</tr>
+<tr>
+<td>list</td>
+<td>Children是稳定ID的条目，宿主滚动；不要用“上一页/下一页”切业务页面</td>
+</tr>
+</tbody>
+</table>
+<p>表单完整片段：</p>
+<pre><code class="language-csharp">new ViewDocument(1, new UiNode(&quot;form&quot;, &quot;settings&quot;, Children: [
+    new(&quot;textInput&quot;, &quot;title&quot;, Label: new(Text: &quot;标题&quot;)) { TextValue = title },
+    new(&quot;number&quot;, &quot;amount&quot;, Label: new(Text: &quot;数量&quot;), Number: 3, Minimum: 1, Maximum: 10),
+    new(&quot;select&quot;, &quot;mode&quot;, Label: new(Text: &quot;模式&quot;)) { TextValue = &quot;a&quot;, Choices = [new(&quot;a&quot;, new(Text: &quot;A&quot;)), new(&quot;b&quot;, new(Text: &quot;B&quot;))] },
+    new(&quot;toggle&quot;, &quot;visible&quot;, Label: new(Text: &quot;显示&quot;), Value: true),
+    new(&quot;button&quot;, &quot;save&quot;, Label: new(Text: &quot;保存&quot;), ActionId: &quot;save&quot;) { Submit = true },
+    new(&quot;button&quot;, &quot;cancel&quot;, Label: new(Text: &quot;取消&quot;)) { Reset = true }
+])) { ClosePolicy = &quot;confirm&quot; };
+</code></pre>
+<p>save参数是 <code>{title:string,amount:number,mode:string,visible:boolean}</code>，schema必须一致。没有ActionId的字段只编辑草稿。<code>Reset</code>不调用MOD，只撤销同一表单草稿；不能同时设置ActionId。ClosePolicy=<code>preserve</code>/<code>discard</code>/<code>confirm</code>。宿主按稳定ID保存光标、选择和草稿，刷新时不要随机生成ID。</p>
+<h3 id="section-8">列表动作不需要隐藏字段</h3>
+<p>声明 API≥1.4 和 <code>ui.arguments</code> 后，节点可携带固定业务参数 Arguments；无需为了传任务ID而加入无意义的单选框：</p>
+<pre><code class="language-csharp">new UiNode(&quot;toggle&quot;, &quot;complete-task-01&quot;, Label: new(Text: title), ActionId: &quot;complete-task&quot;, Value: done) {
+    InstanceId = listId, Field = &quot;completed&quot;, Arguments = ExtensionJson.Value(new { taskId = &quot;task-01&quot; })
+};
+new UiNode(&quot;button&quot;, &quot;delete-task-01&quot;, Label: new(Text: &quot;删除&quot;), ActionId: &quot;delete-task&quot;) {
+    InstanceId = listId, Arguments = ExtensionJson.Value(new { taskId = &quot;task-01&quot; })
+};
+</code></pre>
+<p>开关一次操作就提交 <code>{taskId:&quot;task-01&quot;,completed:boolean}</code>，按钮提交 <code>{taskId:&quot;task-01&quot;}</code>。非表单输入的动态参数键可用Field指定；默认开关desiredValue、其他输入value。Submit按钮会把Arguments与表单字段合并；surface与x/y合并。固定键与动态键重复会明确拒绝，不能让固定参数覆盖用户输入或反过来。Arguments必须是对象，大小/深度受动作JSON限额控制，最终参数仍需通过动作schema。Reset不能携带动作参数。</p>
+<h3 id="section-9">多行文字与长度</h3>
+<p>声明 API≥1.4 和 <code>ui.text</code>，使用 <code>new UiNode(&quot;textInput&quot;, &quot;body&quot;) { Multiline = true, MaxLength = 8000, TextValue = body }</code>。MaxLength为1–16384，0表示默认16384，按UTF-16长度；必须足以容纳发布的初始值。表单与VR输入均执行长度限制，截断不会拆Unicode代理对。</p>
+<p>Windows显示4–10行并可滚动，Enter插入换行，有直接ActionId时Ctrl+Enter提交；没有ActionId则只更新表单草稿。VR沿用同一文本控件和本地键盘，显示多行、点击定位光标、方向键导航和换行粘贴；Enter换行，Ctrl+Enter结束本次字段编辑，只有字段直接声明动作才提交该动作，否则仍需点击表单保存。Esc撤销本次编辑，不向桌面注入文本。预设名称仍是单行48字符，和MOD输入长度分开。</p>
+<h3 id="section-10">任意业务结构的动作参数</h3>
+<p>旧包保持封闭的一层基本类型schema。需要嵌套对象、数组或可空字段时，声明API≥1.4及 <code>actions.json</code>。这是有边界的 JSON Schema 子集，不支持 <code>$ref</code>、正则、oneOf/anyOf或执行代码。根必须为object；字段可用object、array、string、number、integer、boolean、null，也可用type数组表示可空类型。对象明确写additionalProperties（false、true或额外属性的schema），properties/required可省略。支持enum、const、min/maxLength、minimum/maximum、min/maxItems、min/maxProperties，数组必须声明items。</p>
+<pre><code class="language-json">{
+  &quot;type&quot;:&quot;object&quot;,&quot;additionalProperties&quot;:false,&quot;required&quot;:[&quot;items&quot;],
+  &quot;properties&quot;:{
+    &quot;items&quot;:{&quot;type&quot;:&quot;array&quot;,&quot;maxItems&quot;:100,&quot;items&quot;:{
+      &quot;type&quot;:&quot;object&quot;,&quot;additionalProperties&quot;:false,&quot;required&quot;:[&quot;title&quot;,&quot;done&quot;],
+      &quot;properties&quot;:{&quot;title&quot;:{&quot;type&quot;:&quot;string&quot;,&quot;minLength&quot;:1,&quot;maxLength&quot;:128},&quot;done&quot;:{&quot;type&quot;:&quot;boolean&quot;}}
+    }},
+    &quot;metadata&quot;:{&quot;type&quot;:&quot;object&quot;,&quot;additionalProperties&quot;:{&quot;type&quot;:[&quot;string&quot;,&quot;null&quot;]},&quot;maxProperties&quot;:32}
+  }
+}
+</code></pre>
+<p>不要把业务JSON编码成字符串绕过结构校验。新参数正文≤64KiB、深度16、共4096个值，每对象≤256属性、每数组≤512项；schema≤256节点、嵌套8层。拒绝重复属性，错误含JSON Pointer路径。字段名≤128字符；integer按原始数值检查，不把小数四舍五入成整数。</p>
+<p>管理页用 <code>IExtensionManagement</code> 的 UpdateManagementViewAsync / InvokeManagementAsync / DetachManagementViewAsync，发布仍用 ViewSnapshot，目标标识来自 ManagementViewContext。全局页不含伪造的业务实例或工作区；实例页由宿主提供真实 <code>InstanceId</code>，不能自行换成另一实例。</p>
+<p>API1.7 的实例设置页在清单中声明业务类型：</p>
+<pre><code class="language-json">&quot;api&quot;: { &quot;min&quot;: &quot;1.7&quot;, &quot;maxExclusive&quot;: &quot;2.0&quot; },
+&quot;requiredFeatures&quot;: [&quot;ui.basic&quot;, &quot;instance-types&quot;, &quot;management-pages&quot;, &quot;management.instance-pages&quot;],
+&quot;managementPages&quot;: [
+  { &quot;id&quot;: &quot;settings&quot;, &quot;titleKey&quot;: &quot;settings.title&quot;, &quot;initialView&quot;: &quot;views/settings.json&quot; },
+  { &quot;id&quot;: &quot;camera-settings&quot;, &quot;titleKey&quot;: &quot;camera.title&quot;, &quot;initialView&quot;: &quot;views/camera.json&quot;, &quot;instanceTypeId&quot;: &quot;camera&quot; }
+]
+</code></pre>
+<p><code>managementPages</code> 位于 <code>contributes</code> 内，<code>camera</code> 必须是已注册的业务类型。未指定 <code>instanceTypeId</code> 的旧页仍是全局页，只出现在 MOD 管理；指定类型的页面仅出现在匹配实例的小部件编辑区。作者在 <code>UpdateManagementViewAsync</code> 中读取 <code>view.InstanceId</code>，从自己保存的实例表取得内容；实例动作节点显式填写同一个 <code>InstanceId</code>。不可发布或调用指向另一实例的节点。包级动作可放在实例页，但必须真实显示在该页并通过原动作状态及参数校验。</p>
+<p>包级 <code>global</code> 数据不等于设置入口必须属于 MOD 管理。例如共享拍摄配置库可以保存在 global 状态，而入口仍在相机小部件的实例页；系统连接、授权等全局维护才属于 MOD 管理。关闭页面、删除实例、停用该实例功能或休眠进程都会结束租约。无实例页声明的旧包仍能使用原有小部件，宿主不会将其全局管理页冒充本实例设置。</p>
+<p>Windows 管理页只承载设置与配置管理，应独立于 VR <code>widget</code> 视图构建。例如常用语在 Windows 编辑列表和提示音，在 VR 点按发送；相机在 Windows 管理配置，在 VR 应用与拍摄。复用数据、字段与校验，不直接把整份 VR 操作文档当成管理页。保存、撤销、配置复制/删除及导入导出属于管理操作。此为页面职责约定，不改变旧管理页协议或删减公开动作接口。</p>
+<p>Windows 小部件列表复制会从已保存的实例状态创建新稳定 ID、独立存储，并调用正常恢复流程；插件应通过状态接口持续保存业务修改，不能依赖未保存的内存作为可复制内容。复制不创建工作区会话，不改变原实例；单实例类型、停用功能/包及超过64项不能复制，恢复失败撤销新实例和数据。</p>
+</section>
+<section class="chapter" aria-labelledby="section-11"><h2 id="section-11">6. 数据保存与版本迁移</h2>
+<pre><code class="language-csharp">var saved = await Context.SaveGlobalAsync(1, expectedRevision, new { title, mode }, ct);
+// 实例数据：Context.SaveInstanceAsync(instanceId, 1, expectedRevision, value, ct)
+if (!saved.Saved) return new ActionResult(false, saved.Error);
+expectedRevision = saved.Revision; // 收到成功后才能更新本地的已提交状态
+</code></pre>
+<p>数据由宿主放入用户配置目录 <code>mods/data/&lt;包ID&gt;/generations/&lt;代际&gt;/</code>，不写工坊目录、程序安装缓存或源码目录。global与每个instance的Revision分别维护。相同内容保存不增加修订、不写硬盘；不要为“保险”周期保存。</p>
+<p><code>revision_conflict</code>表示旧修订不能覆盖新数据，不能循环强行覆盖。需要按需重读时声明API≥1.4及 <code>state.read</code>，调用 <code>await Context.ReadGlobalAsync(ct)</code> 或 <code>await Context.ReadInstanceAsync(instanceId, ct)</code>，返回VersionedData（DataVersion/Revision/Data）；只能读取当前激活下属于自己的业务内容。可选底层接口为 <code>IExtensionStateContext.ReadStateAsync(StateRead, ct)</code>。重读后让用户合并/重试，不用旧草稿自动覆盖新状态。读取不要求管理员，也不增加文件夹访问能力，不要轮询读取。</p>
+<p>在调用前已经取消的CancellationToken不会发送RPC或启动后端；发送后才取消不等于撤销已执行业务，不能自动重放。迁移在候选代际执行，成功后再切换包/数据；包version升级但数据结构未变时保持dataVersion不变。停用、默认卸载和来源暂时失联保留数据，只有用户明确清除才删除。</p>
+</section>
+<section class="chapter" aria-labelledby="section-12"><h2 id="section-12">7. 调用宿主</h2>
+<p>能力先写入capabilities.required或optional，用户明确授权后才可调用。required缺失时整包不可用；optional未授权时作者显示说明或降级功能。<code>Bootstrap.GrantedCapabilities</code>是本次启动的授权，权限变动会重新启动普通工作器。</p>
+<pre><code class="language-csharp">var result = await Context.RequestHostAsync(&quot;workspace.read&quot;, new { }, ct);
+if (!result.Available) return new ActionResult(false, result.Error);
+// 只读调用直接返回业务JSON；修改调用返回 operationId 和 status:&quot;queued&quot;。
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>content.read</td>
+<td><code>{}</code>，返回自己的 ExtensionInstance[]（id、extensionId、typeId、name）</td>
+</tr>
+<tr>
+<td>content.manage</td>
+<td><code>{operation:&quot;create&quot;,typeId,name}</code>；<code>{operation:&quot;rename&quot;,instanceId,name}</code>；<code>{operation:&quot;delete&quot;,instanceId}</code></td>
+</tr>
+<tr>
+<td>workspace.read</td>
+<td><code>{}</code>，返回activeWorkspaceId、workspaces[]（id/name/stageMode/layoutRevision/windows[]）、keyboardLayout/fontScale/reduceMotion</td>
+</tr>
+<tr>
+<td>workspace.manage</td>
+<td><code>{operation:&quot;create&quot;,name}</code>；<code>{operation:&quot;select&quot;,workspaceId}</code>；rename/copy/delete还要workspaceId、expectedName，rename另带name</td>
+</tr>
+<tr>
+<td>capture.read</td>
+<td><code>{}</code>，返回sources[]、windows[]、workspaceId、layoutRevision；无VR返回vr_unavailable</td>
+</tr>
+<tr>
+<td>capture.manage</td>
+<td>公共workspaceId、expectedLayoutRevision，加 <code>{operation:&quot;add&quot;,sourceId}</code> / <code>{operation:&quot;remove&quot;,windowId}</code> / <code>{operation:&quot;visible&quot;,windowId,visible}</code></td>
+</tr>
+<tr>
+<td>layout.manage</td>
+<td><code>{operation:&quot;edit&quot;,workspaceId,expectedLayoutRevision,windowId,width,height,targetId,side,slide}</code>；targetId可null，side为None/Left/Right/Top/Bottom</td>
+</tr>
+<tr>
+<td>settings.write</td>
+<td><code>{key,value}</code>；key:keyboard.layout(0–2)、ui.reduceMotion(bool)、ui.fontScale(0.8–1.25)、capture.performance(0–2)</td>
+</tr>
+<tr>
+<td>runtime.control</td>
+<td><code>{operation:&quot;keyboard.toggle&quot;}</code> / settings.open / settings.close，依赖VR</td>
+</tr>
+<tr>
+<td>lifecycle.background</td>
+<td><code>{}</code>，返回后台运行授权；不授予更高系统权限</td>
+</tr>
+<tr>
+<td>host.context.read</td>
+<td>API1.10 + host.context；<code>{}</code>，返回 HostContextSnapshot，只含自己的视图与共享运行态</td>
+</tr>
+<tr>
+<td>host.subscriptions</td>
+<td>API1.10 + host.subscriptions；<code>{operation:&quot;subscribe&quot;或&quot;unsubscribe&quot;,topic:&quot;context&quot;或&quot;content&quot;或&quot;workspace&quot;或&quot;capture&quot;}</code></td>
+</tr>
+<tr>
+<td>view.control</td>
+<td>API1.10 + view.requests；严格 ViewControlRequest，仅操作本包当前视图，修改仍返回 queued</td>
+</tr>
+</tbody>
+</table>
+<p>layout/capture修改用最近一次读取的workspaceId和layoutRevision；失败 stale_workspace/interaction_busy/layout_locked/layout_rejected 需要重新读取/让用户结束当前操作，不应盲目重试。工作区和内容修改走宿主正常事务，移除捕获不会关闭Windows应用。</p>
+<p>修改请求的queued <strong>不是执行成功</strong>。实现 <code>IExtensionHostEvents.HostEventAsync(HostEvent notification, CancellationToken ct)</code>，用notification.OperationId匹配自己的请求，并检查Success/Data/Error。创建结果的Data含instanceId；工作区修改完成结果包含工作区/布局修订及适用的新对象ID。不要在触发动作回调里等待未来HostEvent，该回调返回后宿主才会执行排队动作。</p>
+<p>工作区与设置写入的成功Data固定采用以下结构。create示例：</p>
+<pre><code class="language-json">{&quot;workspaceId&quot;:&quot;当前活动工作区GUID&quot;,&quot;createdWorkspaceId&quot;:&quot;本次新建工作区GUID&quot;,&quot;createdWindowId&quot;:null,&quot;layoutRevision&quot;:&quot;当前活动布局的不透明修订串&quot;}
+</code></pre>
+<p>create只创建，不自动切换；workspaceId仍指原活动工作区。rename/copy/delete/select及settings.write也返回这四个字段：只有copy/create时createdWorkspaceId可能非null；只有新增捕获时createdWindowId可能非null；select成功后的workspaceId为新活动工作区。布局修订当作不透明字符串比较，不据此计算坐标。设置值不在完成Data里，使用workspace.read读回fontScale/reduceMotion等值。</p>
+<p>workspace.manage的rename/copy/delete需要最近一次读取的expectedName；目标已删除或已在其他界面改名时，Success=false，Error给出可显示原因，不能依赖其中文措辞分支或自动重试。重新workspace.read、让用户重新确认目标后再提交。MOD自己也可在提交前校验其缓存快照，但这不能代替宿主的最终并发检查。</p>
+<h3 id="api1.10">7.1 宿主联动（API1.10）</h3>
+<p>按实际需要分别声明三个特性和权限，不自动为旧包授权。读取自己的新上下文时，capabilities 中声明 <code>host.context.read</code>，requiredFeatures 中声明 <code>host.context</code>。如果还要收到 Window 字段，同时显式选择 API1.9 的 <code>view.window-context</code>；<code>host.context</code> 不隐式开启它。</p>
+<p><code>host.context.read</code> 的 Data 可用 <code>ExtensionJson.Read&lt;HostContextSnapshot&gt;</code> 读取。RuntimeAvailable 表示运行端近期正在供给数据；无运行端或超过两秒未收到供给时为 false，Runtime 为 null。VR 是否已连接另外读 Runtime.VrConnected。Views 只包含本包的活动 ViewId/ActivationId/InstanceId/WorkspaceId/ContextRevision 及各自 ViewHostState，不混入其他包实例。</p>
+<table>
+<thead>
+<tr>
+<th>快照</th>
+<th>公开值与含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime</td>
+<td>当前 WorkspaceId、WorkspaceVisible、WorkspaceAutoHidden、InputLocked、SettingsVisible、KeyboardVisible、WorkspaceHand(left/right/null)、Language、FontScale、ThemeVersion、ReduceMotion、VrConnected、LayoutMode(tiled/focus)</td>
+</tr>
+<tr>
+<td>Runtime.Theme</td>
+<td>语义颜色 Text/Muted/Disabled/Panel/Border/Accent/Control/Hover/Pressed/Selected；颜色为 #RRGGBB 或 #AARRGGBB。自绘可用；结构化 UI 继续使用宿主模板</td>
+</tr>
+<tr>
+<td>ViewHostState</td>
+<td>Open、普通窗口 Pinned、当前呈现 AutoHide/Opacity/Scale、手部 Collapsed/AlwaysVisible/RevealInView、Focused、InteractionBlock、Placement</td>
+</tr>
+<tr>
+<td>Placement</td>
+<td>稳定 TargetId、Reference(world/dock/hand-left/hand-right)、已提交 Pose、DockParent/DockSide/DockAlong/DockAngleDegrees；Pose 用米和四元数。dock 使用父子关系而不重复父级逐帧世界位姿；手部给实际默认或已保存的局部挂点，不跟踪手柄世界位姿</td>
+</tr>
+</tbody>
+</table>
+<p>Focused 表示当前窗口的前台排序或本窗口的内容编辑/滚动持有，不等于 Windows 前台进程。Open 表示当前打开记录；实际是否显示读 View.Visible，是否可操作读 Window.CanInteract。focus 成功或 Open=true 不绕过工作区显示、手部抬手/常显、自动隐藏及输入释放策略。InteractionBlock 是当前输入资格说明，可为 hidden/collapsed/auto_hidden/spatial_edit/dashboard/tracking_unavailable/workspace_hidden/input_release；空字符串表示此快照未发现阻断。最终输入资格仍经过宿主即时校验。自身 metadata 改变会更新选用了 host.context 的上下文修订，保留同一 ViewId，不清空业务草稿。已提交 Scale/Pose 在抓握预览中保持事务起点；取消不发布预览提交值。普通窗口和手部 Scale 独立，整体缩放为无级值。</p>
+<p>订阅另声明 <code>host.subscriptions</code> 特性和同名能力；四个 topic 依次还要求 host.context.read（及 host.context 特性）、content.read、workspace.read、capture.read。订阅不扩大原读取权限。subscribe 直接返回 HostSubscriptionReceipt(subscriptionId,topic)，相同主题重复订阅返回同一个 ID。首次及值变化时调用已有 <code>IExtensionHostEvents.HostEventAsync</code>：Kind=<code>host.snapshot</code>，OperationId=subscriptionId，Data 为 HostSnapshotEvent(topic,revision,available,data,error)。HostEvent.Success=true 表示快照通知本身，数据可用性读 Data.Available；例如无 VR 的 capture 快照会携带 Available=false 和错误。不要把订阅通知当作写入完成。</p>
+<p>每包每主题最多一个订阅，共四个；宿主最多每秒四次检查，合并期间中间状态，内容相等不通知。Revision 在该订阅内递增，不能跨订阅比较。unsubscribe 返回后停止后续供给；已经进入工作器回调的通知可以先完成。权限撤销、停用、崩溃或工作器重启会结束订阅；不会自动恢复或重放。订阅本身不阻止休眠，持续后台联动需单独声明并取得 lifecycle.background。通过 view.control 主动隐藏的视图保留本次可恢复租约，直到重新显示、切换工作区、停用或工作器结束，避免刚隐藏便失去恢复身份；这与没有任何视图的后台运行分开。事件回调应只更新本地业务状态和合并重绘，勿阻塞等待未来事件。</p>
+<p>自身操作另声明 <code>view.requests</code> 特性和 <code>view.control</code> 能力，使用当前视图的三个身份字段。不可用猜测的实例、其他贡献或上次激活的 ViewId 代替。</p>
+<pre><code class="language-csharp">var request = new ViewControlRequest(view.ViewId, view.ActivationId,
+    view.ContextRevision, &quot;resize&quot;) { Width = 640, Height = 448, Scale = 1.137 };
+var accepted = await Context.RequestHostAsync(&quot;view.control&quot;, request, ct);
+// accepted.Data.status == &quot;queued&quot; 时保存 operationId，等同 Kind 的匹配 HostEvent。
+// HostEvent.Success 才表示应用结果；失败需要显式重新读取，不自动重试。
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>唯一允许的附加参数</th>
+<th>运行端行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>focus</td>
+<td>无</td>
+<td>请求打开自己的窗口并更新宿主前台排序；实际显隐仍遵循工作区与手部等显示策略，不改变 Windows 应用焦点</td>
+</tr>
+<tr>
+<td>visibility</td>
+<td>Visible(bool)</td>
+<td>收起/重新显示自己；隐藏后保留本次视图身份以允许恢复，不删除实例</td>
+</tr>
+<tr>
+<td>resize</td>
+<td>Width/Height(int，可省略)、Scale(double，可省略)，至少一项</td>
+<td>逻辑画布由宿主按当前网格及声明边界解析，Scale 合法范围0.45–2且无级；一笔事务校验碰撞、子链和吸附，一步撤销</td>
+</tr>
+<tr>
+<td>reset-size</td>
+<td>无</td>
+<td>当前呈现恢复合法默认画布与100%整体缩放，一步撤销</td>
+</tr>
+<tr>
+<td>opacity</td>
+<td>Opacity(0.1–1)</td>
+<td>当前呈现透明度</td>
+</tr>
+<tr>
+<td>display-policy</td>
+<td>Pinned/AutoHide/AlwaysVisible/RevealInView(bool，可省略)，至少一项</td>
+<td>普通窗口接受 Pinned 和原延时 AutoHide；手部 AutoHide 与 AlwaysVisible 互为反值，传一个即可。两者同值返回 invalid_display_policy。RevealInView是独立的手部视野唤醒开关，默认true，仅AutoHide开启时影响显示。普通窗口提交此字段返回wrong_presentation；其他不适用字段同理</td>
+</tr>
+<tr>
+<td>hand</td>
+<td>Hand(left/right)</td>
+<td>复用宿主手部投放，目标手需可用，遵循每手一个与占用替换规则</td>
+</tr>
+<tr>
+<td>restore</td>
+<td>无</td>
+<td>解除手部呈现，恢复独立普通窗口的尺寸与缩放；与 reset-size 分开</td>
+</tr>
+</tbody>
+</table>
+<p>手部小窗开启AutoHide后，离开整个正文和附件区域3秒才隐藏，返回取消倒计时；聚焦主屏、列表、标题和内部空隙按一个整体计算。收起或隐藏仅留下原区域非交互边框，指向该区域恢复，无提示按钮。RevealInView默认开启，其按钮仅在自动隐藏启用后显示。判定使用当前实际本体的位姿、宽高及四边与视野范围相交，移动和调整尺寸后实时更新，不使用初始挂点；沿用表盘同档角度回差和可读朝向，取消水平高度门槛。标准档45°进入/65°离开，120ms唤醒，移出视野3秒隐藏。指针离开隐藏后继续看着不立即重显，移出视野再看回重新唤醒；关闭RevealInView仍可用指针恢复。关闭AutoHide即常显，始终可操作。工作区mini只暂时隐藏真实吸附的跟随小部件及子链，不改Open；未吸附到工作区的独立窗口、其子级及另一手独立根保留显示和操作。大工作区展开时，手上不留提示或按钮。隐藏面板不参与尺寸碰撞。restore解除手部绑定后，在当前视野中心恢复普通尺寸并解除自身旧父级吸附，保留子级和业务状态；无有效头部定位时返回input_unavailable并保留绑定。小窗的逻辑画布与用户Scale保持独立，首次绑定只适配较小物理范围，Window上下文中的物理几何与实际呈现一致。新绑定的默认朝向与投放提示框一致，再保存为手部相对姿态；已有自定义挂点保留。手部画布继续支持宽高分别网格调整，纵向增减只写当前呈现，不覆盖普通画布。</p>
+<p>显式restore普通窗口时，若大工作区收起则同时展开，保证恢复后的窗口立即可见和可操作；占用槽替换仅把旧对象居中归位，不改变新投放的工作区Compact要求。</p>
+<p>当前控制接入 widget 贡献的普通/手部呈现，表盘返回 unsupported_presentation。请求不能携带无关字段。宿主排队前、执行前及 VR 所有者线程再次校验包/激活/实例/贡献/工作区/上下文；拒绝 stale_context、interaction_busy、input_unavailable 等。操作进行中返回 busy/interaction_busy，碰撞返回 blocked；未接运行端返回 view_operation_unavailable/runtime_unavailable。旧 API1.7/1.8/1.9 包不新增权限或回调。</p>
+<p>接口仍未提供任意世界位姿写入、跨包绑定/控制、任意输入捕获或进程路径。自身位姿读取与相对吸附数据已公开；直接位置/吸附请求需定义坐标基准、目标授权和布局事务，不能由 MOD 改内部对象代替。工作区/来源的现有管理请求及订阅继续独立按权限使用。</p>
+<p>独立运行器的 <code>context</code> 步骤支持 hostState/themeVersion；<code>runtime-context</code> 步骤以 <code>context</code> 字段注入 HostRuntimeContext，仅用于作者场景仿真。它不构成实际 Runtime 或 SteamVR 验证。真实链路验收由应用的 <code>--host-context-runtime-check</code> 检查完成。</p>
+</section>
+<section class="chapter" aria-labelledby="section-13"><h2 id="section-13">8. 独立后端与自绘</h2>
+<p>在runtime中增加：</p>
+<pre><code class="language-json">&quot;backend&quot;: { &quot;executable&quot;: &quot;backend/MyBackend.exe&quot;, &quot;arguments&quot;: [], &quot;protocol&quot;: &quot;json-framed-v1&quot;, &quot;timeoutMs&quot;: 2000 }
+</code></pre>
+<p>同时声明 <code>runtime.backend</code>。后端需要完整运行依赖；普通.NET console的runtimeconfig.json、deps.json、DLL和EXE一起放进backend/。</p>
+<p><code>timeoutMs</code> 允许100–4000毫秒（含两端），默认2000。executable必须是包内.exe；已有协议为json-framed-v1，事件协议json-framed-v2须按下节显式启用。arguments最多16项，每项最长1024字符且不能包含空字符。连接发现等长任务应快速返回操作标识，后续读取状态，不把游戏启动或长时间等待放进一次请求。该超时不是整段后台会话的存活期限。</p>
+<p>前端调用：</p>
+<pre><code class="language-csharp">var answer = await Context.RequestBackendAsync(&quot;calculate&quot;, new { text = &quot;hello&quot; }, ct);
+</code></pre>
+<p>stdin/stdout每条消息为4字节小端长度+UTF-8 JSON（1–65536字节）。请求 <code>{id:GUID,method:string,parameters:object}</code>；回复 <code>{id:同一GUID,success:true,data:object}</code>；业务失败为success:false、data:、error:string。stdout只写协议，诊断用stderr。每次一个在途请求；并发收到backend_busy，调用者排队。</p>
+<p>首次请求才启动后端。业务拒绝保持健康进程；错ID、坏JSON、截断、超限、退出和超时回收该后端及子进程，后续明确重试才创建新进程，不自动重放业务请求。协议错误IOException、超时TimeoutException、业务拒绝InvalidOperationException。关闭、休眠、停用、前端崩溃均回收进程树。</p>
+<h3 id="api-1.5">8.1 后端事件订阅（API 1.5）</h3>
+<p>保持现有 <code>RequestBackendAsync</code> 方法、<code>BackendEntry</code> 构造签名和json-framed-v1协议不变。事件是可选增量：清单最低API1.5，requiredFeatures同时包含 <code>runtime.backend</code>、<code>runtime.backend.events</code>，runtime.backend.protocol显式设为 <code>json-framed-v2</code>。旧包不会因协商到较高API自动切换协议；老宿主会在执行代码前拒绝它不支持的新特性。</p>
+<pre><code class="language-csharp">// 先订阅，再启动消费任务，随后仍通过原请求接口执行业务命令。
+await using var subscription = await Context.SubscribeBackendEventsAsync([&quot;sensor.changed&quot;, &quot;job.completed&quot;], lifetimeToken);
+async Task Consume(CancellationToken ct)
+{
+    await foreach (var value in subscription.ReadAllAsync(ct))
+    {
+        // value.SessionId标识本次后端；Sequence允许有合并造成的空缺，仍严格递增。
+        // 在自己的串行业务入口合并数据，只在内容变化时发布视图；此处不周期保存。
+        ApplyEvent(value);
+    }
+}
+var consuming = Consume(lifetimeToken);
+var result = await Context.RequestBackendAsync(&quot;start&quot;, new { }, ct);
+// 隐藏/关闭最后一个相关视图时Dispose订阅并结束消费；恢复时重新订阅并请求当前快照。
+</code></pre>
+<p>底层可选接口为 <code>IExtensionBackendEventsContext.SubscribeBackendEventsAsync(string[], ct)</code>，返回 <code>IBackendEventSubscription</code>（SessionId、ReadAllAsync、DisposeAsync）。一个订阅整个生命期只允许一次枚举；break、提前Dispose枚举器或取消会自动移除订阅，不能在同一个订阅上再次ReadAllAsync。包内多个小部件通常共用一份订阅再按实例分发，不必每窗新建订阅。确实需要独立消费时再各自订阅。订阅创建会启动后端并等到watch确认；业务请求仍最多一个在途，并发返回backend_busy，作者自行串行调度，不自动重试副作用。</p>
+<p>订阅的CancellationToken或ReadAllAsync的取消只结束该订阅，不停止其他订阅/后端；Dispose会移除本地过滤并通知后端更新订阅集合。后端退出、超时、协议损坏或工作器休眠会结束所属会话的全部订阅；下一次显式请求/订阅可以启动新会话，旧订阅不会偷偷迁移或重放事件。消费循环应处理IOException/取消，并展示中断原因，让用户显式重连。不要在持有自己的业务锁时等待一个同样需要该锁的消费任务退出。</p>
+<p>退订会立即停止本地交付，其异步清理仍需等待watch确认；如果业务请求正在处理，确认会排在该请求之后。事件到达时间应在foreach循环体内记录，不能把取一条后break并等待枚举器清理完成的时间当成到达时间。需要其他任务在收到首条时继续执行，可在循环体内完成TaskCompletionSource，再独立完成清理。</p>
+<p>事件 <code>BackendEvent(SessionId, Sequence, Topic, Data, Key)</code> 有两种交付方式：Key=null是必须保留的FIFO事件，适合任务完成；Key非空则允许将尚未消费的同Topic/Key状态替换为最新值。替换项移到队尾，交付序号仍递增。可靠事件不会静默丢失；慢消费者超出限额时该订阅以backend_event_overflow明确失败，其他健康订阅继续接收。取消或Dispose会丢弃该订阅剩余队列，这是显式关闭。</p>
+<p>每包最多8个订阅；每订阅1–32个互不重复的精确Topic，不支持通配符。Topic长1–64个ASCII字母/数字或 <code>._-</code>；Key为1–128个UTF-16单元、不能全空白或包含空字符。每事件Data是已定义JSON（可为null），UTF-8不超过16KiB；每订阅队列最多64项及256KiB保守计费。v2读取流每秒4MiB预算，单帧仍≤65536字节。后端自己应合并高频状态，不能把每个输入包都变成一份UI或持久化写入。</p>
+<p>后端可以只引用公开SDK，复用无宿主依赖的分帧服务：</p>
+<pre><code class="language-csharp">var server = new BackendEventServer();
+using var input = Console.OpenStandardInput();
+using var output = Console.OpenStandardOutput();
+await server.RunAsync(input, output, HandleRequestAsync, stoppingToken);
+// 来自自己的业务回调/有界生产循环，必须await；不要无限创建发布任务：
+// await server.PublishAsync(&quot;sensor.changed&quot;, ExtensionJson.Value(new { value = 12 }), &quot;sensor-1&quot;, ct);
+// await server.PublishAsync(&quot;job.completed&quot;, ExtensionJson.Value(new { jobId = &quot;42&quot; }), null, ct);
+</code></pre>
+<p><code>HandleRequestAsync</code>签名为 <code>ValueTask&lt;JsonElement&gt; (BackendRequest, CancellationToken)</code>。PublishAsync在没有对应订阅时返回false；否则只保证进入有界发送队列，不代表前端业务已经执行。Data会复制，不依赖调用者JsonDocument的后续生命期。服务每个实例只Run一次，输出队列16帧，生产者必须await以形成背压。可用HasSubscribers(topic)或SubscriptionsChanged停止无订阅时的生产；不要为闲置订阅轮询、打日志或写盘。</p>
+<p>其他语言仍使用4字节小端长度+UTF-8 JSON。v2帧严格如下（null的可选字段省略）：</p>
+<pre><code class="language-json">{&quot;kind&quot;:&quot;open&quot;,&quot;sessionId&quot;:&quot;&lt;工作器新建GUID&gt;&quot;}
+{&quot;kind&quot;:&quot;ready&quot;,&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;}
+{&quot;kind&quot;:&quot;watch&quot;,&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;,&quot;request&quot;:{&quot;id&quot;:&quot;&lt;请求GUID&gt;&quot;,&quot;method&quot;:&quot;watch&quot;,&quot;parameters&quot;:{}},&quot;topics&quot;:[&quot;sensor.changed&quot;]}
+{&quot;kind&quot;:&quot;response&quot;,&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;,&quot;response&quot;:{&quot;id&quot;:&quot;&lt;请求GUID&gt;&quot;,&quot;success&quot;:true,&quot;data&quot;:{}}}
+{&quot;kind&quot;:&quot;request&quot;,&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;,&quot;request&quot;:{&quot;id&quot;:&quot;&lt;请求GUID&gt;&quot;,&quot;method&quot;:&quot;start&quot;,&quot;parameters&quot;:{}}}
+{&quot;kind&quot;:&quot;event&quot;,&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;,&quot;event&quot;:{&quot;sessionId&quot;:&quot;&lt;同一GUID&gt;&quot;,&quot;sequence&quot;:1,&quot;topic&quot;:&quot;sensor.changed&quot;,&quot;data&quot;:{&quot;value&quot;:12},&quot;key&quot;:&quot;sensor-1&quot;}}
+</code></pre>
+<p>先open/ready握手；watch的topics为全部本地订阅的并集，空数组表示停止事件生产，并用普通response确认。业务request也必须有对应response，格式与例中相同，失败success:false/data:/error:string。输出可在回复之间插入event；每个会话事件序号从正整数开始、严格递增，所有写入必须串行，不能交错帧字节。只有工作器生成的SessionId有效。未知帧、错误回复ID、旧SessionId、重复或倒退序号均使后端会话失败并回收进程树，不把错误事件送入业务代码。不要在v1的stdout塞事件；v1读取器仍只接受原回复。</p>
+<h3 id="section-14">8.2 自绘</h3>
+<p>自绘声明 <code>ui.surface</code>，使用唯一surface根节点并提供 <code>SurfaceFrame(width,height,pngBytes)</code>、ActionId及参数schema <code>{x:number[0,1],y:number[0,1]}</code>。宿主按比例显示，留白不接收输入，点击回传归一化x/y并严格检查显示帧的Revision。PNG≤256KiB、单边≤2048、总像素≤2097152，文档仍≤512KiB。前端自己处理Context中的尺寸/语言/字号并重画。</p>
+<p>目前没有悬停、拖动、滚轮、文字输入或HTML浏览器容器；需要文字输入的业务使用结构化form。不能绕过抓握/扳机语义或把插件输入注入桌面。完整的外部输入接口需要单独协商和验证。</p>
+</section>
+<section class="chapter" aria-labelledby="section-15"><h2 id="section-15">9. 提供者、限额与排错</h2>
+<p>提供者不自动覆盖用户选择。在MOD详情的“应用设置”选择后生效；停用回到内置实现并保留选择。支持slot：keyboard.layout(0–2)、keyboard.keys(KeyboardLayoutDefinition)、vr.accent(#RRGGBB)、ui.reduceMotion(bool)、capture.performance(0–2)、layout.snapDistance(0.002–0.1)、workspace.defaultStage(bool)。键盘最多6行、每行32键；每键label、ushort key、units、extended。准确验证以工具返回结果为准。</p>
+<table>
+<thead>
+<tr>
+<th>范围</th>
+<th>限额</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>每包文件</td>
+<td>≤4096文件、总大小≤256MiB、单文件≤128MiB，不含链接</td>
+</tr>
+<tr>
+<td>运行</td>
+<td>活动代码进程8、业务内容总数64、活动包128</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>普通树256节点，list最多512项、每项256节点，深度16，文档512KiB</td>
+</tr>
+<tr>
+<td>节点与选择项ID</td>
+<td>node.id为1–64个UTF-16单元且不全为空白，在文档内唯一；UiChoice.Id为1–64个UTF-16单元，在同一选择器内唯一；最多512个选项</td>
+</tr>
+<tr>
+<td>文字</td>
+<td>Content/Label的文字为UTF-8最多16384字节，Text与Key二选一；TextValue最多16384个UTF-16单元，输入另受MaxLength限制</td>
+</tr>
+<tr>
+<td>数据</td>
+<td>每份JSON≤512KiB，每包数据≤16MiB；无持续日志和心跳写入</td>
+</tr>
+<tr>
+<td>通信</td>
+<td>单条IPC≤1MiB，输入输出队列各4MiB，有界速率及超时</td>
+</tr>
+</tbody>
+</table>
+<p>不要把完整业务地址、URL或长参数名直接当作选择项ID；使用稳定短ID映射到完整业务值，保留原始值，不截断业务地址。选择项Label用于显示，不受ID的64单元限制；select.TextValue必须对应某个UiChoice.Id，不能直接填其标签或完整业务值。</p>
+<h3 id="section-16">9.1 性能与进程隔离的边界</h3>
+<p>代码MOD及独立后端在主程序之外运行；插件业务阻塞或异常不直接占住VR线程的调用栈。但它们与主程序共享CPU、内存、GPU和磁盘，不能将独立进程理解为资源互不影响。普通权限也不等于CPU或内存配额。</p>
+<p>结构化UI由宿主解析、布局、栅格化并上传纹理；自绘PNG仍需宿主解码和上传。复杂文档、高频变化及多个可见部件会增加主程序开销。消息大小、通信流量、节点数量、事件队列与超时用于限制输入和积压，不代表每帧CPU/GPU耗时保证；当前没有逐MOD硬性CPU/GPU配额。</p>
+<p>作者应按实际变化发布视图和状态：后台按业务频率合并高频采样，状态事件用Key表示可替换的最新值，任务完成等可靠事件不要合并。多个视图优先共享一份包级订阅，再按实例分发；最后一个消费者离开即取消。经 <code>lifecycle.background</code> 授权的后台业务本身也可作为消费者，不应依赖视图可见性维持连接；停止该业务时取消订阅。不可见视图停止无用更新；配置只在真实变化时保存。发布与发送都要await，以实际背压调速，不能通过无限并发任务绕过预算。</p>
+<p>性能验收至少比较扩展关闭、正常可见、持续高频更新和再次静止；分别记录主程序帧工作、纹理更新、插件CPU/内存和静置写入。局部渲染耗时、协议压力或SteamVR Null数据不能作为实体头显帧率保证。</p>
+<p>常见错误：</p>
+<ul>
+<li><strong>资源不存在</strong>：应交付package/，检查manifest中的bin路径；普通dotnet build的bin/Release不是包根。</li>
+<li><strong>未知字段/不支持特性/API</strong>：JSON拼写或SDK/宿主版本不匹配，先validate；新类最低API1.4。</li>
+<li><strong>动作没有反应</strong>：检查已声明动作、参数schema、完整ActionState、FeatureId、实例所属类型、当前View/ContextRevision及Enabled/Busy。</li>
+<li><strong>stale_context/management_view_closed</strong>：旧页面/旧激活/已关闭上下文，重新附加，不能对旧ID强行重发。</li>
+<li><strong>permission_denied</strong>：能力未声明或未授权，不是让插件取得管理员权限。</li>
+<li><strong>revision_conflict</strong>：保存用了旧Revision，成功保存后维护新Revision，不自动覆盖。</li>
+<li><strong>backend_protocol_error/backend_timeout</strong>：检查stdout帧格式、请求ID、依赖及超时。协议失败不等于应该自动重放。</li>
+</ul>
+<p>发布前至少验证：新安装/无授权、正常授权、无视图休眠、重复打开、多个内容共用/隔离、失效回调、取消/坏输入、代码/资源热重载、保存去重、后端超时/崩溃/重试、更新迁移失败保留旧数据、卸载默认保留与明确清除。不要把能编译当作能运行，也不要把离线测试当作实体VR体验。</p>
+<p>若受限自动化环境在任何业务步骤前报NamedPipeClientStream连接Access denied，先在普通用户终端用相同包和全新的run目录复现。它可能是父子进程令牌/沙箱隔离问题；不应给MOD申请管理员权限，也不应修改系统管道ACL来绕过。正常应用的管理员桥接仍由宿主负责。</p>
+</section>
+<section class="chapter" aria-labelledby="section-17"><h2 id="section-17">10. 反馈开发阻碍</h2>
+<p>反馈应附：目标、最小包、SDK/宿主版本、确切操作、预期与实际、工具JSON或错误、是否普通/管理员和有无VR。区分文档缺失、接口缺失、接口错误、工具错误与业务代码错误。提出希望减少的样板代码或要增加的通用能力，不靠读取宿主私有源码维持插件。</p>
+</section>
+
+    </article>
+    <footer class="page-footer">VRDesktopHUB 扩展开发手册 · 本页包含完整内容，无需网络连接。<br>由扩展开发手册.md生成；接口签名以 SDK 的 lib/Contracts.cs 和 lib/ExtensionBase.cs 为准。</footer>
+  </main>
+  <div class="sr-only" id="copy-status" role="status"></div>
+  <script>
+    (() => {
+      const article = document.querySelector('article');
+      const sections = [...document.querySelectorAll('.chapter')];
+      const entries = [...document.querySelectorAll('nav > ul > li')];
+      const search = document.querySelector('#search');
+      const status = document.querySelector('#search-status');
+      const contents = document.querySelector('#contents');
+      const compact = matchMedia('(max-width:900px)');
+      const setContents = () => { contents.open = !compact.matches; };
+      setContents();
+      compact.addEventListener('change', setContents);
+
+      for (const table of article.querySelectorAll('table')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-scroll'; wrapper.tabIndex = 0;
+        wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', '表格，可横向滚动');
+        table.before(wrapper); wrapper.append(table);
+      }
+      const searchText = sections.map(section => section.textContent.toLocaleLowerCase());
+      const intro = document.querySelector('#intro');
+      const introText = intro.textContent.toLocaleLowerCase();
+      for (const [index, pre] of [...article.querySelectorAll('pre')].entries()) {
+        const code = pre.querySelector('code'); if (!code) continue;
+        const language = [...code.classList].find(name => name.startsWith('language-'))?.slice(9) || 'text';
+        const toolbar = document.createElement('div'); toolbar.className = 'code-toolbar';
+        const label = document.createElement('span'); label.textContent = {powershell:'PowerShell',csharp:'C#',json:'JSON',text:'TEXT',bash:'Bash'}[language] || language;
+        const button = document.createElement('button'); button.className = 'copy'; button.type = 'button'; button.textContent = '复制'; button.setAttribute('aria-label', `复制第 ${index + 1} 段 ${label.textContent} 代码`);
+        toolbar.append(label,button); pre.prepend(toolbar);
+        pre.tabIndex = 0; pre.setAttribute('aria-label', `${label.textContent} 代码，可横向滚动`);
+        button.addEventListener('click', async () => {
+          try {
+            const value = code.textContent;
+            try { await navigator.clipboard.writeText(value); }
+            catch {
+              const input = document.createElement('textarea'); input.value = value;
+              input.style.cssText = 'position:fixed;top:0;left:-9999px;'; document.body.append(input);
+              try { input.select(); if (!document.execCommand('copy')) throw new Error('copy'); }
+              finally { input.remove(); button.focus({preventScroll:true}); }
+            }
+            button.textContent = '已复制'; document.querySelector('#copy-status').textContent = `已复制第 ${index + 1} 段代码`;
+          } catch { button.textContent = '请选中复制'; document.querySelector('#copy-status').textContent = '复制失败，请选中代码后复制。'; }
+          clearTimeout(button.resetTimer); button.resetTimer = setTimeout(() => { button.textContent = '复制'; },1800);
+        });
+      }
+      function highlight(query) {
+        for (const mark of article.querySelectorAll('mark')) { const parent = mark.parentNode; mark.replaceWith(document.createTextNode(mark.textContent)); parent.normalize(); }
+        if (!query) return;
+        const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, {acceptNode: node => node.parentElement.closest('[hidden],.code-toolbar,.no-results') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+        const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+        let count = 0;
+        for (const node of nodes) {
+          const value = node.nodeValue; const folded = value.toLocaleLowerCase(); let start = 0, found = folded.indexOf(query); if (found < 0) continue;
+          const fragment = document.createDocumentFragment();
+          while (found >= 0 && count < 300) {
+            fragment.append(document.createTextNode(value.slice(start,found)));
+            const mark = document.createElement('mark'); mark.textContent = value.slice(found,found + query.length); fragment.append(mark);
+            start = found + query.length; found = folded.indexOf(query,start); count++;
+          }
+          fragment.append(document.createTextNode(value.slice(start))); node.replaceWith(fragment);
+          if (count >= 300) break;
+        }
+      }
+      function filter() {
+        const query = search.value.trim().toLocaleLowerCase(); let visible = 0;
+        sections.forEach((section,index) => { const matched = !query || searchText[index].includes(query); section.hidden = !matched; entries[index].hidden = !matched; if (matched) visible++; });
+        const introMatch = !query || introText.includes(query); intro.hidden = !introMatch;
+        document.querySelector('#no-results').hidden = !query || visible > 0 || introMatch;
+        status.textContent = query ? `找到 ${visible} 个相关章节${introMatch ? '，含简介' : ''}` : `${sections.length} 个章节 · 可离线使用`;
+        highlight(query);
+        if (compact.matches && query) contents.open = true;
+      }
+      let searchTimer;
+      search.addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(filter,120); });
+      search.addEventListener('keydown', event => { if (event.key === 'Enter') { clearTimeout(searchTimer); filter(); (article.querySelector('mark') || sections.find(section => !section.hidden) || intro).scrollIntoView({block:'center'}); } });
+      document.addEventListener('keydown', event => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); search.focus(); search.select(); }
+        if (event.key === 'Escape' && document.activeElement === search) { clearTimeout(searchTimer); search.value = ''; filter(); }
+      });
+      document.querySelector('nav').addEventListener('click', event => { if (compact.matches && event.target.closest('a')) contents.open = false; });
+      document.querySelector('.brand').addEventListener('click', () => { search.value = ''; clearTimeout(searchTimer); filter(); });
+      const links = [...document.querySelectorAll('nav a')];
+      const observer = new IntersectionObserver(items => {
+        const visible = items.filter(item => item.isIntersecting); if (!visible.length) return;
+        const target = visible[0].target.id;
+        for (const link of links) { const active = link.hash === `#${target}`; link.classList.toggle('active',active); if (active) link.setAttribute('aria-current','location'); else link.removeAttribute('aria-current'); }
+      }, {rootMargin:'-5% 0px -75% 0px'});
+      article.querySelectorAll('h2,h3').forEach(heading => observer.observe(heading));
+    })();
+  </script>
+</body>
+</html>
