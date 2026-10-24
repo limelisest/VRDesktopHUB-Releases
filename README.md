@@ -8,8 +8,8 @@ VRDesktopHUB 的官方发行与扩展开发文档仓库，提供安装包、签�
 
 ## 扩展开发
 
-下载 [Alpha144 完整扩展 SDK](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha144/VRDesktopHUB-Alpha144-ExtensionSDK.zip)（[SHA256](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha144/VRDesktopHUB-Alpha144-ExtensionSDK.zip.sha256)），解压后从包内 `README.md` 开始。需要 Windows x64 和 .NET 10 SDK；内含项目生成器、公开契约、编译/校验/打包工具、独立工作器、可直接运行的场景以及离线手册，无需主程序源码。已验证项目生成、移动 SDK 后编译、打包及独立工作器运行，并使用 Alpha144 发行工作器验证同一个 MOD。
+下载 [Alpha145 完整扩展 SDK](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha145/VRDesktopHUB-Alpha145-ExtensionSDK.zip)（[SHA256](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha145/VRDesktopHUB-Alpha145-ExtensionSDK.zip.sha256)），解压后从包内 `README.md` 开始。需要 Windows x64 和 .NET 10 SDK；内含项目生成器、公开契约、编译/校验/打包工具、独立工作器、三个高级示例以及离线 HTML 与 Markdown 手册，无需主程序源码。已验证项目生成、移动 SDK 后编译、打包及发行真实独立工作器。
 
-从[扩展开发手册](docs/扩展开发手册.md)开始，当前文档对应 Alpha144、扩展 API1.10，包含包结构、生命周期、UI、数据保存、宿主联动、独立后端及验收方法。
+从[扩展开发手册](docs/扩展开发手册.md)开始，当前文档对应 Alpha145、扩展 API1.12（含 1.11 能力），包含包结构、生命周期、UI、数据保存、宿主联动、独立后端及验收方法。
 
-[离线 HTML 手册](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha144/VRDesktopHUB-Alpha144-Extension-Handbook.html)下载后可直接用浏览器打开，支持目录、搜索和复制代码；另提供[Markdown 下载](https://github.com/limelisest/VRDesktopHUB-Releases/releases/download/Alpha144/VRDesktopHUB-Alpha144-Extension-Handbook.md)。仓库中也保留[HTML 文件](docs/扩展开发手册.html)。单独的手册附件仅包含文档；完整开发工具请下载上方 SDK。
+仓库中也保留[HTML 文件](docs/扩展开发手册.html)。Alpha145 不提供单独的手册附件，离线 HTML 与 Markdown 手册随上方 SDK 完整内附。
